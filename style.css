@@ -3,6 +3,7 @@ body, html {
     padding: 0px;
     height: 100%;
     width: 100%;
+    background-color: black;
 }
 
 .max {
@@ -10,8 +11,9 @@ body, html {
     height: 100%;
 }
 
-p, h1, h2, h3, h4, h5, h6, input, button {
+p, h1, h2, h3, h4, h5, h6 {
     font-family: Arial;
+    color: white;
 }
 
 .max-width { width: 100%; }
@@ -70,7 +72,7 @@ button, input {
 }
 
 #result {
-    background-color: #888;
+    background-color: #aaa;
     height: 100%;
     width: calc(100% - 20px);
     padding-left: 20px;
