@@ -13,6 +13,7 @@ let runButton = document.getElementById("run");
 taskElm.value = localStorage.getItem("goog-task") ?? "1"
 
 let updateUIWithTask = async (taskNum) => {
+    resultElm.style.backgroundImage = "";
     previewElm.innerHTML = `<img src="/view/${taskNum}" class="max-width">`
     try {
         let resp = await fetch(`/sols/${taskNum}`)
@@ -29,6 +30,7 @@ let updateUIWithTask = async (taskNum) => {
 }
 
 let runTask = async (taskNum) => {
+    resultElm.style.backgroundImage = "";
     if (taskNum == undefined) {
         alert("massive error contact quasar098");
         return
@@ -76,6 +78,8 @@ let runTask = async (taskNum) => {
         imgsDiv.appendChild(actual);
 
         resultElm.appendChild(imgsDiv);
+    } else {
+        resultElm.style.backgroundImage = "url(https://i.etsystatic.com/28810262/r/il/2fc5e0/5785166966/il_fullxfull.5785166966_nvy4.jpg)"
     }
 
     let newElm = document.createElement("code")
