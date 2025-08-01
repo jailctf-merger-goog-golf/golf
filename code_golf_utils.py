@@ -221,8 +221,10 @@ def verify_program(task_num, examples):
         print("Error: Function p() in task.py is not callable.")
         return
     print()
+    has_printed_first_err = False
 
     def verify(example_subset):
+        nonlocal has_printed_first_err
         right, wrong, expected = 0, 0, None
         for example in example_subset:
             example_copy = copy.deepcopy(example)
@@ -232,7 +234,10 @@ def verify_program(task_num, examples):
                 else:
                     expected = copy.deepcopy(example)
                     wrong += 1
-            except:
+            except Exception as e:
+                if not has_printed_first_err:
+                    print("ERROR:", e)
+                has_printed_first_err = True
                 wrong += 1
         return right, wrong, expected
 
@@ -248,7 +253,17 @@ def verify_program(task_num, examples):
     else:
         print("Your code IS NOT ready for submission.")
         expected = arc_agi_expected if arc_agi_expected else arc_gen_expected
-        if not expected: return
+        if not expected:
+            from PIL import Image, ImageDraw
+
+            img = Image.new('RGB', (100, 30), color=(73, 109, 137))
+
+            d = ImageDraw.Draw(img)
+            d.text((10,10), "ERROR!", fill=(255,255,0))
+
+            img.save('./working/expected.png')
+            img.save('./working/actual.png')
+            return
         actual = {}
         actual["input"] = expected["input"]
         actual["output"] = program(copy.deepcopy(expected["input"]))
