@@ -25051,13 +25051,13 @@ taskElm.addEventListener("keydown", (e) => {
   }, 20);
 });
 leftButton.addEventListener("click", (e) => {
-  let taskNum = Math.min(Math.max(1 * taskElm.value - 1, 1), 400);
+  let taskNum = (1 * taskElm.value + 398) % 400 + 1;
   taskElm.value = taskNum + [];
   localStorage.setItem("goog-task", taskElm.value);
   updateUIWithTask(taskNum);
 });
 rightButton.addEventListener("click", (e) => {
-  let taskNum = Math.min(Math.max(1 * taskElm.value + 1, 1), 400);
+  let taskNum = (1 * taskElm.value + 400) % 400 + 1;
   taskElm.value = taskNum + [];
   localStorage.setItem("goog-task", taskElm.value);
   updateUIWithTask(taskNum);
