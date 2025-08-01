@@ -26168,9 +26168,15 @@ var view = new EditorView({
   extensions: [basicSetup, python(), oneDark, [theme2]]
   // EditorView.lineWrapping],
 });
+var annotationsUploadTimeout = void 0;
 var silentlisten = EditorView.updateListener.of((v) => {
   if (v.docChanged) {
-    fetch(`/annotations/${1 * taskElm.value}`, { method: "POST", body: annotations.state.doc.toString() });
+    if (annotationsUploadTimeout !== void 0) {
+      clearTimeout(annotationsUploadTimeout);
+    }
+    annotationsUploadTimeout = setTimeout(() => {
+      fetch(`/annotations/${1 * taskElm.value}`, { method: "POST", body: annotations.state.doc.toString() });
+    }, 500);
   }
 });
 var annotations = new EditorView({

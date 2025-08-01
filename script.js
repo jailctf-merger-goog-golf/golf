@@ -203,10 +203,17 @@ const view = new EditorView({
   extensions: [basicSetup, python(), oneDark, [theme]],// EditorView.lineWrapping],
 })
 
+let annotationsUploadTimeout = undefined;
+
 
 let silentlisten = EditorView.updateListener.of((v) => {
     if (v.docChanged) {
-      fetch(`/annotations/${1*taskElm.value}`, {method: 'POST', body: annotations.state.doc.toString()})
+      if (annotationsUploadTimeout !== undefined) {
+        clearTimeout(annotationsUploadTimeout)
+      }
+      annotationsUploadTimeout = setTimeout(() => {
+        fetch(`/annotations/${1*taskElm.value}`, {method: 'POST', body: annotations.state.doc.toString()})
+      }, 500)
     }
 })
 
