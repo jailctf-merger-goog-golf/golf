@@ -1,1 +1,1 @@
-p=lambda g,r=range(3):[[2*(g[y][x]&g[y][x+4])for x in r]for y in r]
+p=lambda g,r=range(3):[[2*g[y][x]&2*g[y][x+4]for x in r]for y in r]

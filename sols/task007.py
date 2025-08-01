@@ -1,0 +1,1 @@
+p=lambda g:[([max(sum(g,[])[i::3])for i in range(3)]*3)[q%3:][:7]for q in range(7)]
