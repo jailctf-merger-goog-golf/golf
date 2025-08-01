@@ -1,0 +1,1 @@
+p=lambda g:(l:=range(len(g)),x:=max(max((i*(q:=g[i][j]>0),j*q)for i in l)for j in l))and[[g[b:=x[0]][a:=x[1]]*(i-j==a-b or i+j==a+b)for i in l]for j in l]
