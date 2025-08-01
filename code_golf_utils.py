@@ -23,6 +23,8 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
+os.makedirs("working", exist_ok=True)
+
 code_golf_dir = "./infos/"
 libraries = ["collections", "itertools", "math", "operator", "re", "string",
              "struct"]
@@ -135,12 +137,14 @@ def show_legend():
         image[1][2 * idx + 1] = color
     fig = plt.figure(figsize=(10, 5))
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.imshow(np.array(image))
     for idx, _ in enumerate(colors):
         color = "white" if idx in [0, 9] else "black"
         ax.text(2 * idx + 0.9, 1.1, str(idx), color=color)
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.imshow(np.array(image))
+
+    fig.savefig('./legend.png', dpi=300, bbox_inches='tight', pad_inches=0)
 
 
 def show_examples(examples, bgcolor=(255, 255, 255)):
@@ -164,7 +168,7 @@ def show_examples(examples, bgcolor=(255, 255, 255)):
                 image[r + 2][offset + c + 1] = colors[cell]
         offset += output_width + 4
     # Draw the image.
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(10, 3))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.imshow(np.array(image))
     # Draw the horizontal and vertical lines.
@@ -192,7 +196,6 @@ def show_examples(examples, bgcolor=(255, 255, 255)):
 def verify_program(task_num, examples):
     task_name, task_path = "task_with_imports", f"./sols/task{task_num:03d}.py"
     module_path = "./working/task_with_imports.py"
-    os.makedirs("workdirs", exist_ok=True)
     with open(task_path, "r") as file:
         file_content = file.read()
         if "import" in file_content:
@@ -240,10 +243,6 @@ def verify_program(task_num, examples):
         task_length = os.path.getsize(task_path)
         print("Your code IS READY for submission!")
         print("Its length appears to be " + str(task_length) + " bytes.")
-        print("Next steps:")
-        print(" * Copy it into a file named task{:03d}.py on your local machine.".format(task_num))
-        print(" * Create a zip file containing that program along with all others.")
-        print(" * Submit that zip file to the Kaggle competition so that it can be officially scored.")
     else:
         print("Your code IS NOT ready for submission.")
         expected = arc_agi_expected if arc_agi_expected else arc_gen_expected

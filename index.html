@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Quickstart Example 1</title>
+        <link rel="icon" href="data:;base64,=">
+        <link rel="stylesheet" type="text/css" href="/style.css">
+    </head>
+    <body class="flex-vertical max">
+
+    <div class="buttons max-width justify-space-between flex-horizontal flex-align-start">
+        <div>
+            <button id="run">run</button>
+        </div>
+        <div>
+            <button id="left"> < </button>
+            <input type="text" name="task" id="task">
+            <button id="right"> > </button>
+        </div>
+    </div>
+    <div class="flex-horizontal max m38">
+        <div class="flex-horizontal max">
+            <div id="editor"></div>
+        </div>
+        <div class="images flex-vertical">
+            <h1>color key</h1>
+            <img src="/legend.png" class="max-width">
+            <h1>test cases preview</h1>
+            <div id="preview">
+                <img src="/working/saved.png" class="max-width">
+            </div>
+            <h1>result</h1>
+            <div id="result">
+                <p>(none)</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./bundle.js"></script>
+    </body>
+</html>
