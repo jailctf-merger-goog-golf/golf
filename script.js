@@ -9,11 +9,14 @@ let previewElm = document.getElementById("preview");
 let leftButton = document.getElementById("left");
 let rightButton = document.getElementById("right");
 let runButton = document.getElementById("run");
+let uploadButton = document.getElementById("upload-solution");
+let gitpullButton = document.getElementById("do-git-pull");
 
 taskElm.value = localStorage.getItem("goog-task") ?? "1"
 
 let updateUIWithTask = async (taskNum) => {
     resultElm.style.backgroundImage = "";
+    uploadButton.disabled = true; // dont upload until we get a valid submission
     while (resultElm.firstChild) {
         resultElm.firstChild.remove();
     }
@@ -84,6 +87,7 @@ let runTask = async (taskNum) => {
     }
     if (text.includes("code IS READY for submission")) {
         resultElm.style.backgroundImage = "url(https://i.etsystatic.com/28810262/r/il/2fc5e0/5785166966/il_fullxfull.5785166966_nvy4.jpg)"
+        uploadButton.disabled = false; // good solution, can upload now
     }
 
     let newElm = document.createElement("code")
@@ -94,6 +98,59 @@ let runTask = async (taskNum) => {
 
 runButton.addEventListener("click", (e) => {
     runTask(taskElm.value*1)
+})
+
+let doGitPull = async () => {
+    let resp = await fetch(`/actions/pull`, {method: "POST"});
+    let text = await resp.text();
+    if (resp.status == 500) {
+        // returncode was nonzero
+        console.log("Git Pull Failed! Message:");
+        console.log(text);
+        console.log("=".repeat(30));
+        alert("Git Pull failed. Check console for details.");
+        return;
+    }
+
+    if (resp.status == 501 || resp.status == 200) {
+        // timeout/success, just alert return message from server
+        alert(text);
+        return;
+    }
+
+    console.log(`Got response code ${resp.status} while doing git pull.`);
+    console.log(`message: ${text}`);
+    alert("Got unknown response from server, check logs.");
+}
+
+gitpullButton.addEventListener("click", (e) => {
+    doGitPull();
+})
+
+let doUpload = async (taskNum) => {
+    if (taskNum == undefined) {
+        alert("massive error in doUpload");
+        return
+    }
+
+    let resp = await fetch(`/upload/${taskNum}`, {method: "POST"})
+    let text = await resp.text();
+
+    if (resp.status != 200) {
+        // can be missing file, timeout, or git cmd failing
+        console.log(`Upload Failed! Message:`);
+        console.log(text);
+        console.log("=".repeat(30));
+        alert("Upload failed, check console logs");
+        return;
+    }
+
+    // yay success! just give them the message that the server returned
+    alert(text);
+}
+
+uploadButton.addEventListener("click", (e) => {
+    doUpload(taskElm.value*1)
 })
 
 taskElm.addEventListener("keydown", (e) => {

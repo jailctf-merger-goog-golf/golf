@@ -74,6 +74,54 @@ def view(task):
 def sols(task):
     return send_from_directory("./sols/", f"task{task:03d}.py", mimetype='application/x-python-code')
 
+def run_git_cmd(cmd):
+    try:
+        proc = subprocess.run(cmd, shell=True, capture_output=True, timeout=15, text=True)
+        if proc.returncode != 0:
+            return proc.stdout, 500 # output is still in stdout for some reason
+    except subprocess.TimeoutExpired:
+        return "Timed out while uploading to GitHub. Is your wifi down?", 500
+    
+    return "", 200
+
+@app.post('/upload/<int:task>')
+def upload(task):
+    # upload solution to the github quick and easy
+    solution_path = f"./sols/task{task:03d}.py"
+    if not os.path.exists(solution_path):
+        return f"Solution for task {task} was not found", 404
+    
+    cmds = (
+        f"git add {solution_path}",
+        f"git commit -m 'Upload task {task}'",
+        "git push"
+    )
+    
+    for cmd in cmds:
+        msg, status_code = run_git_cmd(cmd)
+        if status_code == 200:
+            continue
+        
+        return f"Error while running '{cmd}'\n" + msg, status_code
+
+    return f"Successfully uploaded solution for task {task} to GitHub!", 200
+
+@app.post('/actions/pull')
+def git_pull():
+    # keep the --rebase. or dont, idc
+    cmd = "git pull --rebase"
+    try:
+        proc = subprocess.run(cmd, shell=True, capture_output=True, timeout=5, text=True)
+        if proc.returncode != 0:
+            return proc.stderr, 500
+    except subprocess.TimeoutExpired:
+        return "Timed out while uploading to GitHub. Is your wifi down?", 501
+    
+    print('=' * 50)
+    print("Git Pull Output:")
+    print(proc.stdout)
+    print('=' * 50)
+    return "Git Pull success! Check server logs for pull details.", 200
 
 if __name__ == '__main__':
     app.run()
