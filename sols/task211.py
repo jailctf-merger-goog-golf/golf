@@ -1,0 +1,1 @@
+def p(g):g=[a[::-1]+a for a in g[::-1]];return g+g[::-1]+g
