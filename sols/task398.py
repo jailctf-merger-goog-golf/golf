@@ -1,1 +1,1 @@
-p=lambda g:(w:=5*sum(map(bool,g[0])))and[([0]*(w-i-1)+g[0]+[0]*99)[:w]for i in range(w)]
+p=lambda g:(w:=5*sum(map(bool,g[0])))and[([0]*(w-i-1)+g[0]+[0]*w)[:w]for i in range(w)]
