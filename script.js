@@ -14,6 +14,9 @@ taskElm.value = localStorage.getItem("goog-task") ?? "1"
 
 let updateUIWithTask = async (taskNum) => {
     resultElm.style.backgroundImage = "";
+    while (resultElm.firstChild) {
+        resultElm.firstChild.remove();
+    }
     previewElm.innerHTML = `<img src="/view/${taskNum}" class="max-width">`
     try {
         let resp = await fetch(`/sols/${taskNum}`)
@@ -63,22 +66,23 @@ let runTask = async (taskNum) => {
         return;
     }
 
-    if (!text.includes("code IS READY for submission")) {
+    if (text.includes("code IS NOT ready for submission")) {
         let imgsDiv = document.createElement('div')
         imgsDiv.classList.add('flex-horizontal')
 
         let expected = document.createElement("img")
-        expected.setAttribute("src", "/working/expected.png")
+        expected.setAttribute("src", "/working/expected.png?" + Date.now())
         expected.classList.add("broken")
         imgsDiv.appendChild(expected);
 
         let actual = document.createElement("img")
-        actual.setAttribute("src", "/working/actual.png")
+        actual.setAttribute("src", "/working/actual.png?" + Date.now())
         actual.classList.add("broken")
         imgsDiv.appendChild(actual);
 
         resultElm.appendChild(imgsDiv);
-    } else {
+    }
+    if (text.includes("code IS READY for submission")) {
         resultElm.style.backgroundImage = "url(https://i.etsystatic.com/28810262/r/il/2fc5e0/5785166966/il_fullxfull.5785166966_nvy4.jpg)"
     }
 
