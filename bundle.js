@@ -25068,21 +25068,16 @@ runButton.addEventListener("click", (e) => {
 });
 var doGitPull = async () => {
   let resp = await fetch(`/actions/pull`, { method: "POST" });
-  let text = await resp.text();
   if (resp.status == 500) {
-    console.log("Git Pull Failed! Message:");
-    console.log(text);
-    console.log("=".repeat(30));
-    alert("Git Pull failed. Check console for details.");
+    alert("Git Pull failed. Check server logs for details.");
     return;
   }
   if (resp.status == 501 || resp.status == 200) {
+    let text = await resp.text();
     alert(text);
     return;
   }
-  console.log(`Got response code ${resp.status} while doing git pull.`);
-  console.log(`message: ${text}`);
-  alert("Got unknown response from server, check logs.");
+  alert("Got unknown response from server. Check server logs.");
 };
 gitpullButton.addEventListener("click", (e) => {
   doGitPull();
@@ -25092,16 +25087,15 @@ var doUpload = async (taskNum) => {
     alert("massive error in doUpload");
     return;
   }
-  let resp = await fetch(`/upload/${taskNum}`, { method: "POST" });
+  let resp = await fetch(`/actions/upload/${taskNum}`, { method: "POST" });
   let text = await resp.text();
-  if (resp.status != 200) {
-    console.log(`Upload Failed! Message:`);
-    console.log(text);
-    console.log("=".repeat(30));
-    alert("Upload failed, check console logs");
-    return;
+  if (resp.status == 501 || resp.status == 502) {
+    alert(text);
+  } else if (resp.status != 200) {
+    alert("Upload failed. Check server logs.");
+  } else {
+    alert(text);
   }
-  alert(text);
 };
 uploadButton.addEventListener("click", (e) => {
   doUpload(taskElm.value * 1);
