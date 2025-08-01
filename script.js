@@ -1,6 +1,7 @@
 import {EditorView, basicSetup} from "codemirror"
 import {python} from "@codemirror/lang-python"
 import {oneDark} from "@codemirror/theme-one-dark"
+import {coolGlow} from 'thememirror';
 
 
 let resultElm = document.getElementById("result");
@@ -30,6 +31,14 @@ let updateUIWithTask = async (taskNum) => {
             text = await resp.text();
         }
         view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } })
+        let resp2 = await fetch(`/annotations/${taskNum}`)
+        let text2;
+        if (resp2.status == 404) {
+            text2 = ""
+        } else {
+            text2 = await resp2.text()
+        }
+        annotations.dispatch({ changes: { from: 0, to: annotations.state.doc.length, insert: text2 } })
     } catch (e) {
         alert(e)
     }
@@ -46,6 +55,9 @@ let runTask = async (taskNum) => {
     }
     let resp = await fetch(`/run/${taskNum}`, {method: "POST", body: view.state.doc.toString()})
     let text = await resp.text();
+    while (resultElm.firstChild) {
+        resultElm.firstChild.remove();
+    }
     if (resp.status != 200) {
         let newElm = document.createElement("p")
         if (resp.status == 500) {
@@ -187,7 +199,21 @@ const view = new EditorView({
   extensions: [basicSetup, python(), oneDark, [theme]],// EditorView.lineWrapping],
 })
 
+
+let silentlisten = EditorView.updateListener.of((v) => {
+    if (v.docChanged) {
+      fetch(`/annotations/${1*taskElm.value}`, {method: 'POST', body: annotations.state.doc.toString()})
+    }
+})
+
+const annotations = new EditorView({
+  parent: document.getElementById("annotations"),
+  doc: "",
+  extensions: [basicSetup, python(), coolGlow, [theme], silentlisten],// EditorView.lineWrapping],
+})
+
 window.theme = theme;
 window.view = view;
+window.annotations = annotations;
 
 updateUIWithTask(localStorage.getItem("goog-task"))

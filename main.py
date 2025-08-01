@@ -74,6 +74,20 @@ def view(task):
 def sols(task):
     return send_from_directory("./sols/", f"task{task:03d}.py", mimetype='application/x-python-code')
 
+
+@app.get('/annotations/<int:task>')
+def annotations(task):
+    return send_from_directory("./annotations/", f"task{task:03d}.py", mimetype='application/x-python-code')
+
+
+@app.post('/annotations/<int:task>')
+def annotations_post(task):
+    with open(f"./annotations/task{str(task).rjust(3, '0')}.py", 'wb') as f:
+        f.write(request.data)
+
+    return 'sall good man', 200
+
+
 def run_git_cmd(cmd):
     msg, status_code = "", 200
     try:
@@ -82,7 +96,7 @@ def run_git_cmd(cmd):
             output = "STDOUT:\n" + proc.stdout + "\nSTDERR:\n" + proc.stderr
             msg, status_code = output, 500
     except subprocess.TimeoutExpired:
-        msg, status_code =  "Timed out while uploading to GitHub. Make sure you're signed in and your wifi is up.", 501
+        msg, status_code = "Timed out while uploading to GitHub. Make sure you're signed in and your wifi is up.", 501
     
     print('=' * 50)
     print(f"Output of {cmd!r}:")
@@ -103,6 +117,7 @@ def upload(task):
     
     cmds = (
         f"git add {solution_path}",
+        f"git add annotations",
         f'git commit -m "Upload task {task}"',
         "git push"
     )
