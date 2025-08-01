@@ -114,19 +114,12 @@ def upload(task):
 
 @app.post('/actions/pull')
 def git_pull():
-    # keep the --rebase. or dont, idc
     cmd = "git pull --rebase"
-    try:
-        proc = subprocess.run(cmd, shell=True, capture_output=True, timeout=5, text=True)
-        if proc.returncode != 0:
-            return proc.stderr, 500
-    except subprocess.TimeoutExpired:
-        return "Timed out while uploading to GitHub. Is your wifi down?", 501
-    
-    print('=' * 50)
-    print("Git Pull Output:")
-    print(proc.stdout)
-    print('=' * 50)
+
+    msg, status_code = run_git_cmd(cmd)
+    if status_code != 200:
+        return msg, status_code
+
     return "Git Pull success! Check server logs for pull details.", 200
 
 if __name__ == '__main__':
