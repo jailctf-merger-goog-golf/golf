@@ -25018,13 +25018,21 @@ var runTask = async (taskNum) => {
     resultElm.firstChild.remove();
   }
   let resp = await fetch(`/run/${taskNum}`, { method: "POST", body: view.state.doc.toString() });
+  let text = await resp.text();
   if (resp.status != 200) {
     let newElm2 = document.createElement("p");
-    newElm2.innerText = "error! (todo print error here) (probably syntax error)";
+    if (resp.status == 500) {
+      newElm2.innerText = "Got a runtime error:\n" + text;
+    } else if (resp.status == 501) {
+      newElm2.innerText = text;
+    } else if (resp.status == 502) {
+      newElm2.innerText = "Got unknown error when running:\n" + text;
+    } else {
+      newElm2.innerText = `Runner returned an unknown status code of ${resp.status}`;
+    }
     resultElm.appendChild(newElm2);
     return;
   }
-  let text = await resp.text();
   if (!text.includes("code IS READY for submission")) {
     let broken = document.createElement("img");
     broken.setAttribute("src", "/working/broken.png");

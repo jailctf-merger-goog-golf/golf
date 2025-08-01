@@ -37,14 +37,30 @@ let runTask = async (taskNum) => {
         resultElm.firstChild.remove();
     }
     let resp = await fetch(`/run/${taskNum}`, {method: "POST", body: view.state.doc.toString()})
+    let text = await resp.text();
     if (resp.status != 200) {
         let newElm = document.createElement("p")
-        newElm.innerText = "error! (todo print error here) (probably syntax error)";  // todo do this
+        if (resp.status == 500) {
+            // return code wasn't 0, will get full stderr output
+            newElm.innerText = "Got a runtime error:\n" + text;
+        }
+        else if (resp.status == 501) {
+            // timeout error, should return a good error message
+            newElm.innerText = text;
+        }
+        else if (resp.status == 502) {
+            // unknown error
+            newElm.innerText = "Got unknown error when running:\n" + text;
+        }
+        else {
+            // unknown status code
+            newElm.innerText = `Runner returned an unknown status code of ${resp.status}`
+        }
+        
         resultElm.appendChild(newElm);
         return;
     }
 
-    let text = await resp.text();
     if (!text.includes("code IS READY for submission")) {
         let broken = document.createElement("img")
         broken.setAttribute("src", "/working/broken.png")

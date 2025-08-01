@@ -1,1 +1,1 @@
-p=lambda g:[[g[r%3][c%3]*bool(g[r//3][c//3]) for c in range(9)]for r in range(9)]
+p=lambda g,q=range(9):[[g[r//3][c//3]and g[r%3][c%3]for c in q]for r in q]
