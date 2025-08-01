@@ -1,0 +1,1 @@
+p=lambda g,r=range(3):[[g[j][i]for j in r]for i in r]
