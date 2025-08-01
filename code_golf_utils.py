@@ -147,7 +147,7 @@ def show_legend():
     fig.savefig('./legend.png', dpi=300, bbox_inches='tight', pad_inches=0)
 
 
-def show_examples(examples, bgcolor=(255, 255, 255)):
+def show_examples(examples, bgcolor=(255, 255, 255), ratio=7):
     # Determine the dimensions of the image to be rendered.
     width, height, offset = 0, 0, 1
     for example in examples:
@@ -168,7 +168,7 @@ def show_examples(examples, bgcolor=(255, 255, 255)):
                 image[r + 2][offset + c + 1] = colors[cell]
         offset += output_width + 4
     # Draw the image.
-    fig = plt.figure(figsize=(10, 3))
+    fig = plt.figure()
     ax = fig.add_axes([0, 0, 1, 1])
     ax.imshow(np.array(image))
     # Draw the horizontal and vertical lines.
@@ -251,5 +251,5 @@ def verify_program(task_num, examples):
         actual["input"] = expected["input"]
         actual["output"] = program(copy.deepcopy(expected["input"]))
         print("The expected result is shown in green; your actual result is shown in red.")
-        show_examples([expected], bgcolor=(200, 255, 200))
-        show_examples([actual], bgcolor=(255, 200, 200))
+        show_examples([expected], bgcolor=(200, 255, 200), ratio=4)
+        show_examples([actual], bgcolor=(255, 200, 200), ratio=4)

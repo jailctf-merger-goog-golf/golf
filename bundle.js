@@ -24995,7 +24995,7 @@ var rightButton = document.getElementById("right");
 var runButton = document.getElementById("run");
 taskElm.value = localStorage.getItem("goog-task") ?? "1";
 var updateUIWithTask = async (taskNum) => {
-  previewElm.innerHTML = `<p id='loading'>loading</p><img src="/view/${taskNum}" onload="document.getElementById('loading').remove()" class="max-width">`;
+  previewElm.innerHTML = `<img src="/view/${taskNum}" class="max-width">`;
   try {
     let resp = await fetch(`/sols/${taskNum}`);
     let text;
@@ -25020,8 +25020,7 @@ var runTask = async (taskNum) => {
   let resp = await fetch(`/run/${taskNum}`, { method: "POST", body: view.state.doc.toString() });
   if (resp.status != 200) {
     let newElm2 = document.createElement("p");
-    newElm2.style.color = "red";
-    newElm2.innerText = "error! (todo print error here)";
+    newElm2.innerText = "error! (todo print error here) (probably syntax error)";
     resultElm.appendChild(newElm2);
     return;
   }
@@ -25029,7 +25028,7 @@ var runTask = async (taskNum) => {
   if (!text.includes("code IS READY for submission")) {
     let broken = document.createElement("img");
     broken.setAttribute("src", "/working/broken.png");
-    broken.classList.add("max-width");
+    broken.classList.add("broken");
     resultElm.appendChild(broken);
   }
   let newElm = document.createElement("code");
@@ -25066,7 +25065,8 @@ rightButton.addEventListener("click", (e) => {
 var view = new EditorView({
   parent: document.getElementById("editor"),
   doc: "",
-  extensions: [basicSetup, python(), oneDark]
+  extensions: [basicSetup, python(), oneDark],
+  lineWrapping: true
 });
 window.view = view;
 updateUIWithTask(localStorage.getItem("goog-task"));

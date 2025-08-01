@@ -10,4 +10,4 @@ else:
 show_legend()
 examples = load_examples(task_num)
 show_examples(examples['train'] + examples['test'])
-plt.savefig(f"./working/view/task{task_num:03d}.png")
+plt.savefig(f"./working/view/task{task_num:03d}.png", dpi=600, bbox_inches='tight')

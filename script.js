@@ -13,7 +13,7 @@ let runButton = document.getElementById("run");
 taskElm.value = localStorage.getItem("goog-task") ?? "1"
 
 let updateUIWithTask = async (taskNum) => {
-    previewElm.innerHTML = `<p id='loading'>loading</p><img src="/view/${taskNum}" onload="document.getElementById('loading').remove()" class="max-width">`
+    previewElm.innerHTML = `<img src="/view/${taskNum}" class="max-width">`
     try {
         let resp = await fetch(`/sols/${taskNum}`)
         let text;
@@ -39,8 +39,7 @@ let runTask = async (taskNum) => {
     let resp = await fetch(`/run/${taskNum}`, {method: "POST", body: view.state.doc.toString()})
     if (resp.status != 200) {
         let newElm = document.createElement("p")
-        newElm.style.color = "red";
-        newElm.innerText = "error! (todo print error here)";  // todo do this
+        newElm.innerText = "error! (todo print error here) (probably syntax error)";  // todo do this
         resultElm.appendChild(newElm);
         return;
     }
@@ -49,7 +48,7 @@ let runTask = async (taskNum) => {
     if (!text.includes("code IS READY for submission")) {
         let broken = document.createElement("img")
         broken.setAttribute("src", "/working/broken.png")
-        broken.classList.add("max-width")
+        broken.classList.add("broken")
         resultElm.appendChild(broken);
     }
 
@@ -90,7 +89,8 @@ rightButton.addEventListener("click", (e) => {
 const view = new EditorView({
   parent: document.getElementById("editor"),
   doc: "",
-  extensions: [basicSetup, python(), oneDark]
+  extensions: [basicSetup, python(), oneDark],
+  lineWrapping: true,
 })
 
 window.view = view;

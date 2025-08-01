@@ -18,20 +18,23 @@
             <button id="right"> > </button>
         </div>
     </div>
-    <div class="flex-horizontal max m38">
+    <div class="flex-vertical max m38">
         <div class="flex-horizontal max">
             <div id="editor"></div>
         </div>
-        <div class="images flex-vertical">
-            <h1>color key</h1>
-            <img src="/legend.png" class="max-width">
-            <h1>test cases preview</h1>
-            <div id="preview">
-                <img src="/working/saved.png" class="max-width">
+        <div class="flex-horizontal" style="height: 60%">
+            <div class="images flex-vertical">
+                <div class="flex-horizontal">
+                    <div id="preview">
+                        <img src="/working/saved.png" class="max-width">
+                    </div>
+                </div>
             </div>
-            <h1>result</h1>
-            <div id="result">
-                <p>(none)</p>
+            <div class="flex-vertical result-outer">
+                <div id="result">
+                    <p>(none)</p>
+                </div>
+                <img src="/legend.png" class="max-width">
             </div>
         </div>
     </div>
