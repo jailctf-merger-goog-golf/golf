@@ -24993,9 +24993,12 @@ var previewElm = document.getElementById("preview");
 var leftButton = document.getElementById("left");
 var rightButton = document.getElementById("right");
 var runButton = document.getElementById("run");
+var uploadButton = document.getElementById("upload-solution");
+var gitpullButton = document.getElementById("do-git-pull");
 taskElm.value = localStorage.getItem("goog-task") ?? "1";
 var updateUIWithTask = async (taskNum) => {
   resultElm.style.backgroundImage = "";
+  uploadButton.disabled = true;
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
   }
@@ -25053,6 +25056,7 @@ var runTask = async (taskNum) => {
   }
   if (text.includes("code IS READY for submission")) {
     resultElm.style.backgroundImage = "url(https://i.etsystatic.com/28810262/r/il/2fc5e0/5785166966/il_fullxfull.5785166966_nvy4.jpg)";
+    uploadButton.disabled = false;
   }
   let newElm = document.createElement("code");
   newElm.innerText = text;
@@ -25061,6 +25065,40 @@ var runTask = async (taskNum) => {
 };
 runButton.addEventListener("click", (e) => {
   runTask(taskElm.value * 1);
+});
+var doGitPull = async () => {
+  let resp = await fetch(`/actions/pull`, { method: "POST" });
+  if (resp.status == 500) {
+    alert("Git Pull failed. Check server logs for details.");
+    return;
+  }
+  if (resp.status == 501 || resp.status == 200) {
+    let text = await resp.text();
+    alert(text);
+    return;
+  }
+  alert("Got unknown response from server. Check server logs.");
+};
+gitpullButton.addEventListener("click", (e) => {
+  doGitPull();
+});
+var doUpload = async (taskNum) => {
+  if (taskNum == void 0) {
+    alert("massive error in doUpload");
+    return;
+  }
+  let resp = await fetch(`/actions/upload/${taskNum}`, { method: "POST" });
+  let text = await resp.text();
+  if (resp.status == 501 || resp.status == 502) {
+    alert(text);
+  } else if (resp.status != 200) {
+    alert("Upload failed. Check server logs.");
+  } else {
+    alert(text);
+  }
+};
+uploadButton.addEventListener("click", (e) => {
+  doUpload(taskElm.value * 1);
 });
 taskElm.addEventListener("keydown", (e) => {
   setTimeout(() => {

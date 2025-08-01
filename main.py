@@ -74,6 +74,57 @@ def view(task):
 def sols(task):
     return send_from_directory("./sols/", f"task{task:03d}.py", mimetype='application/x-python-code')
 
+def run_git_cmd(cmd):
+    msg, status_code = "", 200
+    try:
+        proc = subprocess.run(cmd, shell=True, capture_output=True, timeout=15, text=True)
+        if proc.returncode != 0:
+            output = "STDOUT:\n" + proc.stdout + "\nSTDERR:\n" + proc.stderr
+            msg, status_code = output, 500
+    except subprocess.TimeoutExpired:
+        msg, status_code =  "Timed out while uploading to GitHub. Make sure you're signed in and your wifi is up.", 501
+    
+    print('=' * 50)
+    print(f"Output of {cmd!r}:")
+    print("STDOUT:")
+    print(proc.stdout)
+    print("STDERR:")
+    print(proc.stderr)
+    print('=' * 50)
+    return msg, status_code
+
+@app.post('/actions/upload/<int:task>')
+def upload(task):
+    # upload solution to the github quick and easy
+    assert type(task) is int
+    solution_path = os.path.normpath(f"./sols/task{task:03d}.py")
+    if not os.path.exists(solution_path):
+        return f"Solution for task {task} was not found", 502
+    
+    cmds = (
+        f"git add {solution_path}",
+        f'git commit -m "Upload task {task}"',
+        "git push"
+    )
+    
+    for cmd in cmds:
+        msg, status_code = run_git_cmd(cmd)
+        if status_code == 200:
+            continue
+        
+        return f"Error while running {cmd!r}\n" + msg, status_code
+
+    return f"Successfully uploaded solution for task {task} to GitHub!", 200
+
+@app.post('/actions/pull')
+def git_pull():
+    cmd = "git pull --rebase"
+
+    msg, status_code = run_git_cmd(cmd)
+    if status_code != 200:
+        return msg, status_code
+
+    return "Git Pull success! Check server logs for pull details.", 200
 
 if __name__ == '__main__':
     app.run()
