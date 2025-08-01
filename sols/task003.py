@@ -1,0 +1,1 @@
+p=lambda g:(h:=[[i*2for i in a]for a in g])+[*eval((d:=str(h))[(c:=d.index(d[-21:-1])+22):c+31])]
