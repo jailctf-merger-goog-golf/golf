@@ -26121,7 +26121,11 @@ var doUpload = async (taskNum) => {
   if (resp.status == 501 || resp.status == 502) {
     alert(text);
   } else if (resp.status != 200) {
-    alert("Upload failed. Check server logs.");
+    if (text.includes("nothing to commit, working tree clean")) {
+      alert("unchanged file, nothing to commit");
+    } else {
+      alert("Upload failed\n" + text);
+    }
   } else {
     alert(text);
   }

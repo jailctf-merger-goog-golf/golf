@@ -149,7 +149,11 @@ let doUpload = async (taskNum) => {
     }
     else if (resp.status != 200) {
         // git cmd failing or other error
-        alert("Upload failed. Check server logs.");
+        if (text.includes("nothing to commit, working tree clean")) {
+            alert("unchanged file, nothing to commit");
+        } else {
+            alert("Upload failed\n" + text);
+        }
     }
     else {
         // yay success! just give them the message that the server returned
