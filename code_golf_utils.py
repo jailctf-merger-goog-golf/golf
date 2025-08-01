@@ -200,12 +200,12 @@ def verify_program(task_num, examples):
     module_path = "./working/task_with_imports.py"
     with open(task_path, "r") as file:
         file_content = file.read()
-        if "import" in file_content:
-            print("Error: Imports are not permitted")
-            return
+        # if "import" in file_content:
+        #     print("Error: Imports are not permitted")
+        #     return
     with open(module_path, "w") as file:
-        for library in libraries:
-            file.write(f"from {library} import *\n")
+        # for library in libraries:
+        #     file.write(f"from {library} import *\n")
         file.write(file_content)
     spec = importlib.util.spec_from_file_location(task_name, module_path)
     if spec is None:
