@@ -25085,11 +25085,18 @@ rightButton.addEventListener("click", (e) => {
   localStorage.setItem("goog-task", taskElm.value);
   updateUIWithTask(taskNum);
 });
+var theme2 = EditorView.theme({
+  "&": {
+    fontSize: "12pt",
+    border: "1px solid #c0c0c0"
+  }
+});
 var view = new EditorView({
   parent: document.getElementById("editor"),
   doc: "",
-  extensions: [basicSetup, python(), oneDark],
-  lineWrapping: true
+  extensions: [basicSetup, python(), oneDark, [theme2]]
+  // EditorView.lineWrapping],
 });
+window.theme = theme2;
 window.view = view;
 updateUIWithTask(localStorage.getItem("goog-task"));

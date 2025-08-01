@@ -99,3 +99,7 @@ img {
     -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
 
 }
+
+.cm-editor {
+    border: none;
+}

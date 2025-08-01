@@ -120,13 +120,20 @@ rightButton.addEventListener("click", (e) => {
     updateUIWithTask(taskNum)
 })
 
+const theme = EditorView.theme({
+  "&": {
+    fontSize: "12pt",
+    border: "1px solid #c0c0c0"
+  },
+});
+
 const view = new EditorView({
   parent: document.getElementById("editor"),
   doc: "",
-  extensions: [basicSetup, python(), oneDark],
-  lineWrapping: true,
+  extensions: [basicSetup, python(), oneDark, [theme]],// EditorView.lineWrapping],
 })
 
+window.theme = theme;
 window.view = view;
 
 updateUIWithTask(localStorage.getItem("goog-task"))
