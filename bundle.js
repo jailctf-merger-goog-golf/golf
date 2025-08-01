@@ -25034,10 +25034,17 @@ var runTask = async (taskNum) => {
     return;
   }
   if (!text.includes("code IS READY for submission")) {
-    let broken = document.createElement("img");
-    broken.setAttribute("src", "/working/broken.png");
-    broken.classList.add("broken");
-    resultElm.appendChild(broken);
+    let imgsDiv = document.createElement("div");
+    imgsDiv.classList.add("flex-horizontal");
+    let expected = document.createElement("img");
+    expected.setAttribute("src", "/working/expected.png");
+    expected.classList.add("broken");
+    imgsDiv.appendChild(expected);
+    let actual = document.createElement("img");
+    actual.setAttribute("src", "/working/actual.png");
+    actual.classList.add("broken");
+    imgsDiv.appendChild(actual);
+    resultElm.appendChild(imgsDiv);
   }
   let newElm = document.createElement("code");
   newElm.innerText = text;

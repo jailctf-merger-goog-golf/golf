@@ -147,7 +147,7 @@ def show_legend():
     fig.savefig('./legend.png', dpi=300, bbox_inches='tight', pad_inches=0)
 
 
-def show_examples(examples, bgcolor=(255, 255, 255), ratio=7):
+def show_examples(examples, bgcolor=(255, 255, 255), name=""):
     # Determine the dimensions of the image to be rendered.
     width, height, offset = 0, 0, 1
     for example in examples:
@@ -191,6 +191,8 @@ def show_examples(examples, bgcolor=(255, 255, 255), ratio=7):
         offset += 2
     ax.set_xticks([])
     ax.set_yticks([])
+    if len(name) != 0:
+        plt.savefig(f'./working/{name}', dpi=600, bbox_inches='tight')
 
 
 def verify_program(task_num, examples):
@@ -251,5 +253,5 @@ def verify_program(task_num, examples):
         actual["input"] = expected["input"]
         actual["output"] = program(copy.deepcopy(expected["input"]))
         print("The expected result is shown in green; your actual result is shown in red.")
-        show_examples([expected], bgcolor=(200, 255, 200), ratio=4)
-        show_examples([actual], bgcolor=(255, 200, 200), ratio=4)
+        show_examples([expected], bgcolor=(200, 255, 200), name="expected.png")
+        show_examples([actual], bgcolor=(255, 200, 200), name="actual.png")

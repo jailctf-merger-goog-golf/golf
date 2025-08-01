@@ -73,7 +73,7 @@ button, input {
 
 #result {
     background-color: #aaa;
-    height: 100%;
+    height: calc(100% - 125px);
     width: calc(100% - 20px);
     padding-left: 20px;
 }
@@ -86,6 +86,7 @@ button, input {
 .broken {
     width: calc(100% - 40px);
     max-height: 60%;
+    object-fit: contain;
 }
 
 img {

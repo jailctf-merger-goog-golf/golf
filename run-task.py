@@ -9,4 +9,3 @@ else:
     task_num = int(argv[1])
 examples = load_examples(task_num)
 verify_program(task_num, examples)
-plt.savefig('./working/broken.png', dpi=600, bbox_inches='tight')
