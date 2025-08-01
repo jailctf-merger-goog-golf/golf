@@ -1,1 +1,1 @@
-p=lambda g:[list(q) for q in zip(*g)]
+p=lambda g:list(map(list,zip(*g)))
