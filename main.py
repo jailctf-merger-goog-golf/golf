@@ -78,22 +78,28 @@ def run_git_cmd(cmd):
     try:
         proc = subprocess.run(cmd, shell=True, capture_output=True, timeout=15, text=True)
         if proc.returncode != 0:
-            return proc.stdout, 500 # output is still in stdout for some reason
+            output = "STDOUT:\n" + proc.stdout + "\nSTDERR:\n" + proc.stderr
+            return output, 500
     except subprocess.TimeoutExpired:
         return "Timed out while uploading to GitHub. Is your wifi down?", 500
     
+    print('=' * 50)
+    print(f"Output of {cmd!r}:")
+    print(proc.stdout)
+    print('=' * 50)
     return "", 200
 
 @app.post('/upload/<int:task>')
 def upload(task):
     # upload solution to the github quick and easy
-    solution_path = f"./sols/task{task:03d}.py"
+    assert type(task) is int
+    solution_path = os.path.normpath(f"./sols/task{task:03d}.py")
     if not os.path.exists(solution_path):
         return f"Solution for task {task} was not found", 404
     
     cmds = (
         f"git add {solution_path}",
-        f"git commit -m 'Upload task {task}'",
+        f'git commit -m "Upload task {task}"',
         "git push"
     )
     
@@ -102,7 +108,7 @@ def upload(task):
         if status_code == 200:
             continue
         
-        return f"Error while running '{cmd}'\n" + msg, status_code
+        return f"Error while running {cmd!r}\n" + msg, status_code
 
     return f"Successfully uploaded solution for task {task} to GitHub!", 200
 
