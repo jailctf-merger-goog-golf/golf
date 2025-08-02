@@ -9,6 +9,6 @@ def p(g):
      if(x,y)in v or not(0<=x<h and 0<=y<w)or g[x][y]!=0:continue
      v.add((x,y));s.add((x,y));c+=[(x+a,y+b)for a,b in[(0,1),(0,-1),(1,0),(-1,0)]]
     if s and not any(x in[0,h-1]or y in[0,w-1]for x,y in s):o+=s
- r=[list(row)for row in g]
+ r=[[*a]for a in g]
  for i,j in o:r[i][j]=4
- return list(map(list,r))
+ return r
