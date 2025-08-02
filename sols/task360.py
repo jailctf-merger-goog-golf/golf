@@ -1,1 +1,1 @@
-p=lambda g:[[row[x]|row[8-x]for x in range(4)]for row in g]
+p=lambda g:[[r[x]|r[~x]for x in b""]for r in g]
