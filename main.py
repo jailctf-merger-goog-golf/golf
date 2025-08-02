@@ -114,11 +114,14 @@ def upload(task):
     solution_path = os.path.normpath(f"./sols/task{task:03d}.py")
     if not os.path.exists(solution_path):
         return f"Solution for task {task} was not found", 502
-    
+
+    with open(solution_path, 'rb') as f:
+        data = f.read()
+
     cmds = (
         f"git add {solution_path}",
         f"git add annotations",
-        f'git commit -m "Upload task {task}"',
+        f'git commit -m "{len(data)} byte sol for task #{task}"',
         "git push"
     )
     
