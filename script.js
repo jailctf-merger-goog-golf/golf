@@ -13,6 +13,8 @@ let rightButton = document.getElementById("right");
 let runButton = document.getElementById("run");
 let uploadButton = document.getElementById("upload-solution");
 let gitpullButton = document.getElementById("do-git-pull");
+let gitpushButton = document.getElementById("do-git-push");
+let gitstatusButton = document.getElementById("do-git-status");
 
 taskElm.value = localStorage.getItem("goog-task") ?? "1"
 
@@ -143,6 +145,24 @@ let doGitPull = async () => {
 
     alert("Got unknown response from server. Check server logs.");
 }
+
+let doGitStatus = async () => {
+    let resp = await fetch("/actions/status");
+    alert(await resp.text());
+}
+
+let doGitPush = async () => {
+    let resp = await fetch("/actions/push", {method: "POST"});
+    alert(await resp.text());
+}
+
+gitstatusButton.addEventListener("click", (e) => {
+    doGitStatus();
+})
+
+gitpushButton.addEventListener("click", (e) => {
+    doGitPush();
+})
 
 gitpullButton.addEventListener("click", (e) => {
     doGitPull();

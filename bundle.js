@@ -26014,6 +26014,8 @@ var rightButton = document.getElementById("right");
 var runButton = document.getElementById("run");
 var uploadButton = document.getElementById("upload-solution");
 var gitpullButton = document.getElementById("do-git-pull");
+var gitpushButton = document.getElementById("do-git-push");
+var gitstatusButton = document.getElementById("do-git-status");
 taskElm.value = localStorage.getItem("goog-task") ?? "1";
 var updateUIWithTask = async (taskNum) => {
   resultElm.style.backgroundImage = "";
@@ -26120,6 +26122,20 @@ var doGitPull = async () => {
   }
   alert("Got unknown response from server. Check server logs.");
 };
+var doGitStatus = async () => {
+  let resp = await fetch("/actions/status");
+  alert(await resp.text());
+};
+var doGitPush = async () => {
+  let resp = await fetch("/actions/push", { method: "POST" });
+  alert(await resp.text());
+};
+gitstatusButton.addEventListener("click", (e) => {
+  doGitStatus();
+});
+gitpushButton.addEventListener("click", (e) => {
+  doGitPush();
+});
 gitpullButton.addEventListener("click", (e) => {
   doGitPull();
 });

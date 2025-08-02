@@ -149,6 +149,7 @@ def upload(task):
 
     return f"Successfully uploaded solution for task {task} to GitHub!", 200
 
+
 @app.post('/actions/pull')
 def git_pull():
     cmd = "git pull --rebase"
@@ -158,6 +159,28 @@ def git_pull():
         return stderr, status_code
 
     return stdout, 200
+
+
+@app.get('/actions/status')
+def git_status():
+    cmd = "git status"
+
+    msg, stdout, stderr, status_code = run_git_cmd(cmd)
+    if status_code != 200:
+        return stderr, status_code
+
+    return stdout, 200
+
+
+@app.post('/actions/push')
+def git_push():
+    cmd = "git push"
+
+    msg, stdout, stderr, status_code = run_git_cmd(cmd)
+    if status_code != 200:
+        return stderr, status_code
+
+    return stdout + "\n" + stderr, 200
 
 
 @app.get('/random')
