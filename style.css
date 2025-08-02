@@ -92,6 +92,8 @@ button, input {
     height: calc(100% - 125px);
     width: calc(100% - 20px);
     padding-left: 20px;
+    max-height: 400px;
+    overflow-y: scroll;
 }
 
 .result-outer {
