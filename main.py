@@ -6,6 +6,32 @@ from random import choice
 
 app = Flask(__name__)
 
+def execute_task(task):
+    fpath = f"./sols/task{task:03d}.py"
+    with open(fpath, 'wb') as f:
+        data = request.data.replace(b'\x0d\x0a', b'\x0a')
+        f.write(data)
+
+    TIMEOUT = 10  # seconds
+    try:
+        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True)
+        if proc.returncode != 0:
+            status_code = 500
+            output = proc.stderr
+        else:
+            status_code = 200
+            output = proc.stdout
+    except subprocess.TimeoutExpired:
+        status_code = 501
+        output = f"Code timed out after {TIMEOUT} seconds."
+    except Exception as e:
+        status_code = 502
+        output = repr(e)
+
+    if len(request.data) == 0:
+        os.remove(fpath)
+
+    return output, status_code
 
 @app.route('/')
 def home():
@@ -40,31 +66,7 @@ def legend():
 
 @app.post('/run/<int:task>')
 def run(task):
-    fpath = f"./sols/task{task:03d}.py"
-    with open(fpath, 'wb') as f:
-        data = request.data.replace(b'\x0d\x0a', b'\x0a')
-        f.write(data)
-    
-    TIMEOUT = 10  # seconds
-    try:
-        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True)
-        if proc.returncode != 0:
-            status_code = 500
-            output = proc.stderr
-        else:
-            status_code = 200
-            output = proc.stdout
-    except subprocess.TimeoutExpired:
-        status_code = 501
-        output = f"Code timed out after {TIMEOUT} seconds."
-    except Exception as e:
-        status_code = 502
-        output = repr(e)
-
-    if len(request.data) == 0:
-        os.remove(fpath)
-
-    return output, status_code
+    return execute_task(task)
 
 
 @app.get('/view/<int:task>')
@@ -105,7 +107,7 @@ def run_git_cmd(cmd):
             msg, status_code = output, 500
     except subprocess.TimeoutExpired:
         msg, status_code = "Timed out while uploading to GitHub. Make sure you're signed in and your wifi is up.", 501
-    
+
     print('=' * 50)
     print(f"Output of {cmd!r}:")
     print("STDOUT:")
@@ -119,6 +121,11 @@ def run_git_cmd(cmd):
 def upload(task):
     # upload solution to the github quick and easy
     assert type(task) is int
+
+    output, status_code = execute_task(task)
+    if 'Your code IS READY for submission!' not in output:
+        return 'Your solution does not pass all the test cases!'
+
     solution_path = os.path.normpath(f"./sols/task{task:03d}.py")
     if not os.path.exists(solution_path):
         return f"Solution for task {task} was not found", 502
@@ -132,12 +139,12 @@ def upload(task):
         f'git commit -m "{len(data)} byte sol for task #{task}"',
         "git push"
     )
-    
+
     for cmd in cmds:
         msg, stdout, stderr, status_code = run_git_cmd(cmd)
         if status_code == 200:
             continue
-        
+
         return f"Error while running {cmd!r}\n" + msg, status_code
 
     return f"Successfully uploaded solution for task {task} to GitHub!", 200
