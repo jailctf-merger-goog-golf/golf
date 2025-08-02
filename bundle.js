@@ -26019,6 +26019,7 @@ while (!SAFETY_KEY) {
 SAFETY_KEY = SAFETY_KEY.trim();
 var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
 var websocketTiming = -1;
+var ignoreWebsocketUntil = -1;
 var openToReceiving = true;
 var websocket = new WebSocket("ws://34.61.248.158:6969");
 window.websocket = websocket;
@@ -26033,11 +26034,11 @@ websocket.onmessage = (event) => {
   if (typeof data.timing === "number") {
     websocketTiming = data.timing;
   }
-  if (openToReceiving) {
-    if (typeof data.solution === "string" && !solutionView.hasFocus) {
+  if (openToReceiving && websocketTiming > ignoreWebsocketUntil) {
+    if (typeof data.solution === "string" && solutionView.state.doc.toString() !== data.solution) {
       solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: data.solution } });
     }
-    if (typeof data.annotations === "string" && !annotationsView.hasFocus) {
+    if (typeof data.annotations === "string" && annotationsView.state.doc.toString() !== data.annotations) {
       annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: data.annotations } });
     }
   }
@@ -26050,6 +26051,7 @@ var websocketSendViewTask = () => {
 };
 var websocketSendAnnotations = () => {
   if (annotationsView.hasFocus) {
+    ignoreWebsocketUntil = websocketTiming + 0.5;
     websocket.send(JSON.stringify({
       "safety_key": SAFETY_KEY,
       "timing": websocketTiming,
@@ -26061,6 +26063,7 @@ var websocketSendAnnotations = () => {
 };
 var websocketSendSolution = () => {
   if (solutionView.hasFocus) {
+    ignoreWebsocketUntil = websocketTiming + 0.5;
     websocket.send(JSON.stringify({
       "safety_key": SAFETY_KEY,
       "timing": websocketTiming,
