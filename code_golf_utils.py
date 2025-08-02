@@ -202,8 +202,8 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
 
 
 def verify_program(task_num, examples):
-    task_name, task_path = "task_with_imports", f"./sols/task{task_num:03d}.py"
-    module_path = "./working/task_with_imports.py"
+    task_name, task_path = f"task_with_imports{task_num:03d}", f"./sols/task{task_num:03d}.py"
+    module_path = f"./working/task_with_imports/task_with_imports{task_num:03d}.py"
     with open(task_path, "r") as file:
         file_content = file.read()
         # if "import" in file_content:
@@ -269,12 +269,10 @@ def verify_program(task_num, examples):
             d = ImageDraw.Draw(img)
             d.text((10,10), "ERROR!", fill=(255,255,0))
 
-            img.save('./working/expected.png')
-            img.save('./working/actual.png')
+            img.save(f'./working/expected/{task_num:03d}.png')
+            img.save(f'./working/actual/{task_num:03d}.png')
             return
-        actual = {}
-        actual["input"] = expected["input"]
-        actual["output"] = program(copy.deepcopy(expected["input"]))
+        actual = {"input": expected["input"], "output": program(copy.deepcopy(expected["input"]))}
         print("The expected result is shown in green; your actual result is shown in red.")
-        show_examples([expected], bgcolor=(200, 255, 200), name="expected.png")
-        show_examples([actual], bgcolor=(255, 200, 200), name="actual.png")
+        show_examples([expected], bgcolor=(200, 255, 200), name=f'expected/{task_num:03d}.png')
+        show_examples([actual], bgcolor=(255, 200, 200), name=f'actual/{task_num:03d}.png')

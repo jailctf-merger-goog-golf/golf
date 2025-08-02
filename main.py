@@ -98,6 +98,9 @@ def legend():
 @auth_required
 @app.post('/run/<int:task>')
 def run(task):
+    os.makedirs("working/actual", exist_ok=True)
+    os.makedirs("working/expected", exist_ok=True)
+    os.makedirs("working/task_with_imports", exist_ok=True)
     fpath = f"./sols/task{task:03d}.py"
     with open(fpath, 'wb') as f:
         data = request.data.replace(b'\x0d\x0a', b'\x0a')
