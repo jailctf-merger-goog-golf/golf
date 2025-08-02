@@ -139,7 +139,7 @@ def git_pull():
     if status_code != 200:
         return msg, status_code
 
-    return "Git Pull success! Check server logs for pull details.", 200
+    return msg, 200
 
 if __name__ == '__main__':
     app.run()
