@@ -1,0 +1,1 @@
+p=lambda g,r=range(10):[[g[0][max(x,y)%(g[0]+[0]).index(0)]for x in r]for y in r]
