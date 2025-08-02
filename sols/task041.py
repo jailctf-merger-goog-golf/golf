@@ -1,1 +1,1 @@
-p=lambda g,f=range(9):[g[i+1][j]==g[i][j+1]>0==exec('g[i][j]=g[i+1][j]')for _ in f for i in f for j in f]and g
+p=lambda g,x=0:[[c|(x:=x^c)for c in r]for r in g]
