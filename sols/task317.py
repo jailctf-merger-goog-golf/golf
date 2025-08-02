@@ -1,0 +1,1 @@
+p=lambda g,h=range(9):[[g[i+1-i%3][j+1-j%3]>0for j in h]for i in h]
