@@ -1,2 +1,1 @@
-def p(g):
-    return [*map(list,zip(*[sorted(c)for c in zip(*g)]))]
+p=lambda g:[*map(list,zip(*[sorted(c)for c in zip(*g)]))]
