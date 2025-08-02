@@ -152,6 +152,10 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
     width, height, offset = 0, 0, 1
     for example in examples:
         grid, output = example["input"], example["output"]
+        if not isinstance(output, list):
+            raise NotImplementedError("result not 2d list: " + str(output))
+        if not isinstance(output[0], list):
+            raise NotImplementedError("result not 2d list: " + str(output))
         width += len(grid[0]) + 1 + len(output[0]) + 4
         height = max(height, max(len(grid), len(output)) + 4)
     # Determine the contents of the image.
