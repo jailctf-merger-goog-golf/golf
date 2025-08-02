@@ -1,0 +1,1 @@
+p=lambda g,h=range(9):max([a[j-1:j+2]for a in g[i+1:i+4]]if g[i][j]==5else[]for i in h for j in h)
