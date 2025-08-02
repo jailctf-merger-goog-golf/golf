@@ -40,11 +40,12 @@ def legend():
 
 @app.post('/run/<int:task>')
 def run(task):
-    with open(f"./sols/task{task:03d}.py", 'w') as f:
-        data = request.data.decode('latin-1')
+    fpath = f"./sols/task{task:03d}.py"
+    with open(fpath, 'wb') as f:
+        data = request.data.replace(b'\x0d\x0a', b'\x0a')
         f.write(data)
     
-    TIMEOUT = 10 # seconds
+    TIMEOUT = 10  # seconds
     try:
         proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True)
         if proc.returncode != 0:
@@ -59,7 +60,10 @@ def run(task):
     except Exception as e:
         status_code = 502
         output = repr(e)
-        
+
+    if len(request.data) == 0:
+        os.remove(fpath)
+
     return output, status_code
 
 
@@ -83,8 +87,11 @@ def annotations(task):
 
 @app.post('/annotations/<int:task>')
 def annotations_post(task):
-    with open(f"./annotations/task{str(task).rjust(3, '0')}.py", 'wb') as f:
+    fpath = f"./annotations/task{str(task).rjust(3, '0')}.py"
+    with open(fpath, 'wb') as f:
         f.write(request.data)
+    if len(request.data) == 0:
+        os.remove(fpath)
 
     return 'sall good man', 200
 
