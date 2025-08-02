@@ -139,12 +139,12 @@ let runTask = async () => {
         imgsDiv.classList.add('flex-horizontal')
 
         let expected = document.createElement("img")
-        expected.setAttribute("src", `/working/expected/${viewingTaskNum}.png?` + Date.now())
+        expected.setAttribute("src", `/working/expected/${String(viewingTaskNum).padStart(3,'0')}.png?` + Date.now())
         expected.classList.add("broken")
         imgsDiv.appendChild(expected);
 
         let actual = document.createElement("img")
-        actual.setAttribute("src", `/working/actual/${viewingTaskNum}.png?` + Date.now())
+        actual.setAttribute("src", `/working/actual/${String(viewingTaskNum).padStart(3,'0')}.png?` + Date.now())
         actual.classList.add("broken")
         imgsDiv.appendChild(actual);
 
