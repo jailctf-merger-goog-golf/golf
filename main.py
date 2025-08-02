@@ -7,11 +7,6 @@ from random import choice
 app = Flask(__name__)
 
 def execute_task(task):
-    fpath = f"./sols/task{task:03d}.py"
-    with open(fpath, 'wb') as f:
-        data = request.data.replace(b'\x0d\x0a', b'\x0a')
-        f.write(data)
-
     TIMEOUT = 10  # seconds
     try:
         proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True)
@@ -27,9 +22,6 @@ def execute_task(task):
     except Exception as e:
         status_code = 502
         output = repr(e)
-
-    if len(request.data) == 0:
-        os.remove(fpath)
 
     return output, status_code
 
@@ -66,7 +58,15 @@ def legend():
 
 @app.post('/run/<int:task>')
 def run(task):
-    return execute_task(task)
+    fpath = f"./sols/task{task:03d}.py"
+    with open(fpath, 'wb') as f:
+        data = request.data.replace(b'\x0d\x0a', b'\x0a')
+        f.write(data)
+
+    output, status_code = execute_task(task)
+    if len(request.data) == 0:
+        os.remove(fpath)
+    return output, status_code
 
 
 @app.get('/view/<int:task>')
