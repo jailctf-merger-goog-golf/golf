@@ -19,7 +19,7 @@ let lastViewingTaskNum = viewingTaskNum;
 let websocketTiming = -1;
 let ignoreWebsocketUntil = -1;
 let openToReceiving = true;
-let websocket = new WebSocket("ws://34.61.248.158:6969")
+let websocket = new WebSocket("wss://goog-golf.pyjail.club/ws")
 window.websocket = websocket;
 websocket.onmessage = (event) => {
     let data = JSON.parse(event.data);

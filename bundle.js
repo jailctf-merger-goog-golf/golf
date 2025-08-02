@@ -26021,7 +26021,7 @@ var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
 var websocketTiming = -1;
 var ignoreWebsocketUntil = -1;
 var openToReceiving = true;
-var websocket = new WebSocket("ws://34.61.248.158:6969");
+var websocket = new WebSocket("wss://goog-golf.pyjail.club/ws");
 window.websocket = websocket;
 websocket.onmessage = (event) => {
   let data = JSON.parse(event.data);
