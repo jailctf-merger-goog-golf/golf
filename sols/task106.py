@@ -1,0 +1,1 @@
+p=lambda g:(b:=[x+[*y]for x,y in zip(g,zip(*g[::-1]))])+[x[::-1]for x in b[::-1]]
