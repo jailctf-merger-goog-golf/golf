@@ -105,7 +105,7 @@ def run_git_cmd(cmd):
     print("STDERR:")
     print(proc.stderr)
     print('=' * 50)
-    return msg, status_code
+    return msg, proc.stdout, proc.stderr, status_code
 
 @app.post('/actions/upload/<int:task>')
 def upload(task):
@@ -123,7 +123,7 @@ def upload(task):
     )
     
     for cmd in cmds:
-        msg, status_code = run_git_cmd(cmd)
+        msg, stdout, stderr, status_code = run_git_cmd(cmd)
         if status_code == 200:
             continue
         
@@ -135,11 +135,11 @@ def upload(task):
 def git_pull():
     cmd = "git pull --rebase"
 
-    msg, status_code = run_git_cmd(cmd)
+    msg, stdout, stderr, status_code = run_git_cmd(cmd)
     if status_code != 200:
-        return msg, status_code
+        return stderr, status_code
 
-    return msg, 200
+    return stdout, 200
 
 if __name__ == '__main__':
     app.run()

@@ -26098,7 +26098,7 @@ runButton.addEventListener("click", (e) => {
 var doGitPull = async () => {
   let resp = await fetch(`/actions/pull`, { method: "POST" });
   if (resp.status == 500) {
-    alert("Git Pull failed. Check server logs for details.");
+    alert(await resp.text());
     return;
   }
   if (resp.status == 501 || resp.status == 200) {

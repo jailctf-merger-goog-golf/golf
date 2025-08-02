@@ -116,7 +116,8 @@ let doGitPull = async () => {
     let resp = await fetch(`/actions/pull`, {method: "POST"});
     if (resp.status == 500) {
         // returncode was nonzero
-        alert("Git Pull failed. Check server logs for details.");
+        alert(await resp.text());
+//        alert("Git Pull failed. Check server logs for details.");
         return;
     }
 
