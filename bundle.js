@@ -2032,25 +2032,25 @@ var StateEffect = class _StateEffect {
 StateEffect.reconfigure = /* @__PURE__ */ StateEffect.define();
 StateEffect.appendConfig = /* @__PURE__ */ StateEffect.define();
 var Transaction = class _Transaction {
-  constructor(startState, changes, selection2, effects, annotations2, scrollIntoView3) {
+  constructor(startState, changes, selection2, effects, annotations, scrollIntoView3) {
     this.startState = startState;
     this.changes = changes;
     this.selection = selection2;
     this.effects = effects;
-    this.annotations = annotations2;
+    this.annotations = annotations;
     this.scrollIntoView = scrollIntoView3;
     this._doc = null;
     this._state = null;
     if (selection2)
       checkSelection(selection2, changes.newLength);
-    if (!annotations2.some((a) => a.type == _Transaction.time))
-      this.annotations = annotations2.concat(_Transaction.time.of(Date.now()));
+    if (!annotations.some((a) => a.type == _Transaction.time))
+      this.annotations = annotations.concat(_Transaction.time.of(Date.now()));
   }
   /**
   @internal
   */
-  static create(startState, changes, selection2, effects, annotations2, scrollIntoView3) {
-    return new _Transaction(startState, changes, selection2, effects, annotations2, scrollIntoView3);
+  static create(startState, changes, selection2, effects, annotations, scrollIntoView3) {
+    return new _Transaction(startState, changes, selection2, effects, annotations, scrollIntoView3);
   }
   /**
   The new document produced by the transaction. Contrary to
@@ -2162,14 +2162,14 @@ function mergeTransaction(a, b, sequential) {
   };
 }
 function resolveTransactionInner(state, spec, docSize) {
-  let sel = spec.selection, annotations2 = asArray(spec.annotations);
+  let sel = spec.selection, annotations = asArray(spec.annotations);
   if (spec.userEvent)
-    annotations2 = annotations2.concat(Transaction.userEvent.of(spec.userEvent));
+    annotations = annotations.concat(Transaction.userEvent.of(spec.userEvent));
   return {
     changes: spec.changes instanceof ChangeSet ? spec.changes : ChangeSet.of(spec.changes || [], docSize, state.facet(lineSeparator)),
     selection: sel && (sel instanceof EditorSelection ? sel : EditorSelection.single(sel.anchor, sel.head)),
     effects: asArray(spec.effects),
-    annotations: annotations2,
+    annotations,
     scrollIntoView: !!spec.scrollIntoView
   };
 }
@@ -4065,19 +4065,19 @@ var ContentView = class _ContentView {
   get posAtEnd() {
     return this.posAtStart + this.length;
   }
-  posBefore(view2) {
+  posBefore(view) {
     let pos = this.posAtStart;
     for (let child of this.children) {
-      if (child == view2)
+      if (child == view)
         return pos;
       pos += child.length + child.breakAfter;
     }
     throw new RangeError("Invalid child in posBefore");
   }
-  posAfter(view2) {
-    return this.posBefore(view2) + view2.length;
+  posAfter(view) {
+    return this.posBefore(view) + view.length;
   }
-  sync(view2, track) {
+  sync(view, track) {
     if (this.flags & 2) {
       let parent = this.dom;
       let prev = null, next;
@@ -4088,7 +4088,7 @@ var ContentView = class _ContentView {
             if (!contentView || !contentView.parent && contentView.canReuseDOM(child))
               child.reuseDOM(next);
           }
-          child.sync(view2, track);
+          child.sync(view, track);
           child.flags &= ~7;
         }
         next = prev ? prev.nextSibling : parent.firstChild;
@@ -4110,7 +4110,7 @@ var ContentView = class _ContentView {
     } else if (this.flags & 1) {
       for (let child of this.children)
         if (child.flags & 7) {
-          child.sync(view2, track);
+          child.sync(view, track);
           child.flags &= ~7;
         }
     }
@@ -4366,8 +4366,8 @@ function mergeChildrenInto(parent, from, to, insert2, openStart, openEnd) {
   let { i: toI, off: toOff } = cur2.findPos(to, 1);
   let { i: fromI, off: fromOff } = cur2.findPos(from, -1);
   let dLen = from - to;
-  for (let view2 of insert2)
-    dLen += view2.length;
+  for (let view of insert2)
+    dLen += view.length;
   parent.length += dLen;
   replaceRange(parent, fromI, fromOff, toI, toOff, insert2, 0, openStart, openEnd);
 }
@@ -4411,7 +4411,7 @@ var TextView = class _TextView extends ContentView {
   createDOM(textDOM) {
     this.setDOM(textDOM || document.createTextNode(this.text));
   }
-  sync(view2, track) {
+  sync(view, track) {
     if (!this.dom)
       this.createDOM();
     if (this.dom.nodeValue != this.text) {
@@ -4478,12 +4478,12 @@ var MarkView = class _MarkView extends ContentView {
       this.flags |= 4 | 2;
     }
   }
-  sync(view2, track) {
+  sync(view, track) {
     if (!this.dom)
       this.setDOM(this.setAttrs(document.createElement(this.mark.tagName)));
     else if (this.flags & 4)
       this.setAttrs(this.dom);
-    super.sync(view2, track);
+    super.sync(view, track);
   }
   merge(from, to, source, _hasStart, openStart, openEnd) {
     if (source && (!(source instanceof _MarkView && source.mark.eq(this.mark)) || from && openStart <= 0 || to < this.length && openEnd <= 0))
@@ -4563,12 +4563,12 @@ var WidgetView = class _WidgetView extends ContentView {
     this.length -= from;
     return result;
   }
-  sync(view2) {
-    if (!this.dom || !this.widget.updateDOM(this.dom, view2)) {
+  sync(view) {
+    if (!this.dom || !this.widget.updateDOM(this.dom, view)) {
       if (this.dom && this.prevWidget)
         this.prevWidget.destroy(this.dom);
       this.prevWidget = null;
-      this.setDOM(this.widget.toDOM(view2));
+      this.setDOM(this.widget.toDOM(view));
       if (!this.widget.editable)
         this.dom.contentEditable = "false";
     }
@@ -4606,7 +4606,7 @@ var WidgetView = class _WidgetView extends ContentView {
     let top2 = this;
     while (top2.parent)
       top2 = top2.parent;
-    let { view: view2 } = top2, text = view2 && view2.state.doc, start = this.posAtStart;
+    let { view } = top2, text = view && view.state.doc, start = this.posAtStart;
     return text ? text.slice(start, start + this.length) : Text.empty;
   }
   domAtPos(pos) {
@@ -4717,21 +4717,21 @@ function inlineDOMAtPos(parent, pos) {
   }
   return new DOMPos(dom, 0);
 }
-function joinInlineInto(parent, view2, open) {
+function joinInlineInto(parent, view, open) {
   let last, { children } = parent;
-  if (open > 0 && view2 instanceof MarkView && children.length && (last = children[children.length - 1]) instanceof MarkView && last.mark.eq(view2.mark)) {
-    joinInlineInto(last, view2.children[0], open - 1);
+  if (open > 0 && view instanceof MarkView && children.length && (last = children[children.length - 1]) instanceof MarkView && last.mark.eq(view.mark)) {
+    joinInlineInto(last, view.children[0], open - 1);
   } else {
-    children.push(view2);
-    view2.setParent(parent);
+    children.push(view);
+    view.setParent(parent);
   }
-  parent.length += view2.length;
+  parent.length += view.length;
 }
-function coordsInChildren(view2, pos, side) {
+function coordsInChildren(view, pos, side) {
   let before = null, beforePos = -1, after = null, afterPos = -1;
-  function scan(view3, pos2) {
-    for (let i = 0, off = 0; i < view3.children.length && off <= pos2; i++) {
-      let child = view3.children[i], end = off + child.length;
+  function scan(view2, pos2) {
+    for (let i = 0, off = 0; i < view2.children.length && off <= pos2; i++) {
+      let child = view2.children[i], end = off + child.length;
       if (end >= pos2) {
         if (child.children.length) {
           scan(child, pos2 - off);
@@ -4746,16 +4746,16 @@ function coordsInChildren(view2, pos, side) {
       off = end;
     }
   }
-  scan(view2, pos);
+  scan(view, pos);
   let target = (side < 0 ? before : after) || before || after;
   if (target)
     return target.coordsAt(Math.max(0, target == before ? beforePos : afterPos), side);
-  return fallbackRect(view2);
+  return fallbackRect(view);
 }
-function fallbackRect(view2) {
-  let last = view2.dom.lastChild;
+function fallbackRect(view) {
+  let last = view.dom.lastChild;
   if (!last)
-    return view2.dom.getBoundingClientRect();
+    return view.dom.getBoundingClientRect();
   let rects = clientRectsFor(last);
   return rects[rects.length - 1] || null;
 }
@@ -4843,7 +4843,7 @@ var WidgetType = class {
   couldn't (in which case the widget will be redrawn). The default
   implementation just returns false.
   */
-  updateDOM(dom, view2) {
+  updateDOM(dom, view) {
     return false;
   }
   /**
@@ -5146,7 +5146,7 @@ var LineView = class _LineView extends ContentView {
       this.flags |= 4 | 2;
     }
   }
-  sync(view2, track) {
+  sync(view, track) {
     var _a2;
     if (!this.dom) {
       this.setDOM(document.createElement("div"));
@@ -5162,7 +5162,7 @@ var LineView = class _LineView extends ContentView {
       this.dom.classList.add("cm-line");
       this.prevAttrs = void 0;
     }
-    super.sync(view2, track);
+    super.sync(view, track);
     let last = this.dom.lastChild;
     while (last && ContentView.get(last) instanceof MarkView)
       last = last.lastChild;
@@ -5250,12 +5250,12 @@ var BlockWidgetView = class _BlockWidgetView extends ContentView {
   get children() {
     return noChildren;
   }
-  sync(view2) {
-    if (!this.dom || !this.widget.updateDOM(this.dom, view2)) {
+  sync(view) {
+    if (!this.dom || !this.widget.updateDOM(this.dom, view)) {
       if (this.dom && this.prevWidget)
         this.prevWidget.destroy(this.dom);
       this.prevWidget = null;
-      this.setDOM(this.widget.toDOM(view2));
+      this.setDOM(this.widget.toDOM(view));
       if (!this.widget.editable)
         this.dom.contentEditable = "false";
     }
@@ -5376,10 +5376,10 @@ var ContentBuilder = class _ContentBuilder {
       this.pendingBuffer = 0;
     }
   }
-  addBlockWidget(view2) {
+  addBlockWidget(view) {
     this.flushBuffer();
     this.curLine = null;
-    this.content.push(view2);
+    this.content.push(view);
   }
   finish(openEnd) {
     if (this.pendingBuffer && openEnd <= this.bufferMarks.length)
@@ -5447,18 +5447,18 @@ var ContentBuilder = class _ContentBuilder {
           this.getLine();
         this.addBlockWidget(new BlockWidgetView(deco.widget || NullWidget.block, len, deco));
       } else {
-        let view2 = WidgetView.create(deco.widget || NullWidget.inline, len, len ? 0 : deco.startSide);
-        let cursorBefore = this.atCursorPos && !view2.isEditable && openStart <= active.length && (from < to || deco.startSide > 0);
-        let cursorAfter = !view2.isEditable && (from < to || openStart > active.length || deco.startSide <= 0);
+        let view = WidgetView.create(deco.widget || NullWidget.inline, len, len ? 0 : deco.startSide);
+        let cursorBefore = this.atCursorPos && !view.isEditable && openStart <= active.length && (from < to || deco.startSide > 0);
+        let cursorAfter = !view.isEditable && (from < to || openStart > active.length || deco.startSide <= 0);
         let line = this.getLine();
-        if (this.pendingBuffer == 2 && !cursorBefore && !view2.isEditable)
+        if (this.pendingBuffer == 2 && !cursorBefore && !view.isEditable)
           this.pendingBuffer = 0;
         this.flushBuffer(active);
         if (cursorBefore) {
           line.append(wrapMarks(new WidgetBufferView(1), active), openStart);
           openStart = active.length + Math.max(0, openStart - active.length);
         }
-        line.append(wrapMarks(view2, active), openStart);
+        line.append(wrapMarks(view, active), openStart);
         this.atCursorPos = cursorAfter;
         this.pendingBuffer = !cursorAfter ? 0 : from < to || openStart > active.length ? 1 : 2;
         if (this.pendingBuffer)
@@ -5489,10 +5489,10 @@ var ContentBuilder = class _ContentBuilder {
     return builder;
   }
 };
-function wrapMarks(view2, active) {
+function wrapMarks(view, active) {
   for (let mark of active)
-    view2 = new MarkView(mark, [view2], view2.length);
-  return view2;
+    view = new MarkView(mark, [view], view.length);
+  return view;
 }
 var NullWidget = class extends WidgetType {
   constructor(tag) {
@@ -5958,8 +5958,8 @@ var ViewPlugin = class _ViewPlugin {
     return new _ViewPlugin(nextPluginID++, create, eventHandlers, eventObservers, (plugin) => {
       let ext = [];
       if (deco)
-        ext.push(decorations.of((view2) => {
-          let pluginInst = view2.plugin(plugin);
+        ext.push(decorations.of((view) => {
+          let pluginInst = view.plugin(plugin);
           return pluginInst ? deco(pluginInst) : Decoration.none;
         }));
       if (provide)
@@ -5972,7 +5972,7 @@ var ViewPlugin = class _ViewPlugin {
   editor view as argument.
   */
   static fromClass(cls, spec) {
-    return _ViewPlugin.define((view2, arg) => new cls(view2, arg), spec);
+    return _ViewPlugin.define((view, arg) => new cls(view, arg), spec);
   }
 };
 var PluginInstance = class {
@@ -5984,13 +5984,13 @@ var PluginInstance = class {
   get plugin() {
     return this.spec && this.spec.plugin;
   }
-  update(view2) {
+  update(view) {
     if (!this.value) {
       if (this.spec) {
         try {
-          this.value = this.spec.plugin.create(view2, this.spec.arg);
+          this.value = this.spec.plugin.create(view, this.spec.arg);
         } catch (e) {
-          logException(view2.state, e, "CodeMirror plugin crashed");
+          logException(view.state, e, "CodeMirror plugin crashed");
           this.deactivate();
         }
       }
@@ -6013,13 +6013,13 @@ var PluginInstance = class {
     }
     return this;
   }
-  destroy(view2) {
+  destroy(view) {
     var _a2;
     if ((_a2 = this.value) === null || _a2 === void 0 ? void 0 : _a2.destroy) {
       try {
         this.value.destroy();
       } catch (e) {
-        logException(view2.state, e, "CodeMirror plugin crashed");
+        logException(view.state, e, "CodeMirror plugin crashed");
       }
     }
   }
@@ -6033,11 +6033,11 @@ var decorations = /* @__PURE__ */ Facet.define();
 var outerDecorations = /* @__PURE__ */ Facet.define();
 var atomicRanges = /* @__PURE__ */ Facet.define();
 var bidiIsolatedRanges = /* @__PURE__ */ Facet.define();
-function getIsolatedRanges(view2, line) {
-  let isolates = view2.state.facet(bidiIsolatedRanges);
+function getIsolatedRanges(view, line) {
+  let isolates = view.state.facet(bidiIsolatedRanges);
   if (!isolates.length)
     return isolates;
-  let sets = isolates.map((i) => i instanceof Function ? i(view2) : i);
+  let sets = isolates.map((i) => i instanceof Function ? i(view) : i);
   let result = [];
   RangeSet.spans(sets, line.from, line.to, {
     point() {
@@ -6063,10 +6063,10 @@ function getIsolatedRanges(view2, line) {
   return result;
 }
 var scrollMargins = /* @__PURE__ */ Facet.define();
-function getScrollMargins(view2) {
+function getScrollMargins(view) {
   let left = 0, right = 0, top2 = 0, bottom = 0;
-  for (let source of view2.state.facet(scrollMargins)) {
-    let m = source(view2);
+  for (let source of view.state.facet(scrollMargins)) {
+    let m = source(view);
     if (m) {
       if (m.left != null)
         left = Math.max(left, m.left);
@@ -6131,12 +6131,12 @@ var ChangedRange = class _ChangedRange {
   }
 };
 var ViewUpdate = class _ViewUpdate {
-  constructor(view2, state, transactions) {
-    this.view = view2;
+  constructor(view, state, transactions) {
+    this.view = view;
     this.state = state;
     this.transactions = transactions;
     this.flags = 0;
-    this.startState = view2.state;
+    this.startState = view.state;
     this.changes = ChangeSet.empty(this.startState.doc.length);
     for (let tr of transactions)
       this.changes = this.changes.compose(tr.changes);
@@ -6147,8 +6147,8 @@ var ViewUpdate = class _ViewUpdate {
   /**
   @internal
   */
-  static create(view2, state, transactions) {
-    return new _ViewUpdate(view2, state, transactions);
+  static create(view, state, transactions) {
+    return new _ViewUpdate(view, state, transactions);
   }
   /**
   Tells you whether the [viewport](https://codemirror.net/6/docs/ref/#view.EditorView.viewport) or
@@ -6210,9 +6210,9 @@ var DocView = class extends ContentView {
   get length() {
     return this.view.state.doc.length;
   }
-  constructor(view2) {
+  constructor(view) {
     super();
-    this.view = view2;
+    this.view = view;
     this.decorations = [];
     this.dynamicDecorationMap = [false];
     this.domChanged = null;
@@ -6227,11 +6227,11 @@ var DocView = class extends ContentView {
     this.impreciseHead = null;
     this.forceSelection = false;
     this.lastUpdate = Date.now();
-    this.setDOM(view2.contentDOM);
+    this.setDOM(view.contentDOM);
     this.children = [new LineView()];
     this.children[0].setParent(this);
     this.updateDeco();
-    this.updateInner([new ChangedRange(0, 0, 0, view2.state.doc.length)], 0, null);
+    this.updateInner([new ChangedRange(0, 0, 0, view.state.doc.length)], 0, null);
   }
   // Update the document view to a given state.
   update(update) {
@@ -6451,9 +6451,9 @@ var DocView = class extends ContentView {
   enforceCursorAssoc() {
     if (this.hasComposition)
       return;
-    let { view: view2 } = this, cursor2 = view2.state.selection.main;
-    let sel = getSelection(view2.root);
-    let { anchorNode, anchorOffset } = view2.observer.selectionRange;
+    let { view } = this, cursor2 = view.state.selection.main;
+    let sel = getSelection(view.root);
+    let { anchorNode, anchorOffset } = view.observer.selectionRange;
     if (!sel || !cursor2.empty || !cursor2.assoc || !sel.modify)
       return;
     let line = LineView.find(this, cursor2.head);
@@ -6468,9 +6468,9 @@ var DocView = class extends ContentView {
     let dom = this.domAtPos(cursor2.head + cursor2.assoc);
     sel.collapse(dom.node, dom.offset);
     sel.modify("move", cursor2.assoc < 0 ? "forward" : "backward", "lineboundary");
-    view2.observer.readSelectionRange();
-    let newRange = view2.observer.selectionRange;
-    if (view2.docView.posFromDOM(newRange.anchorNode, newRange.anchorOffset) != cursor2.from)
+    view.observer.readSelectionRange();
+    let newRange = view.observer.selectionRange;
+    if (view.docView.posFromDOM(newRange.anchorNode, newRange.anchorOffset) != cursor2.from)
       sel.collapse(anchorNode, anchorOffset);
   }
   // If a position is in/near a block widget, move it to a nearby text
@@ -6480,14 +6480,14 @@ var DocView = class extends ContentView {
     if (pos.node != dom)
       return pos;
     for (let i = pos.offset; !newPos && i < dom.childNodes.length; i++) {
-      let view2 = ContentView.get(dom.childNodes[i]);
-      if (view2 instanceof LineView)
-        newPos = view2.domAtPos(0);
+      let view = ContentView.get(dom.childNodes[i]);
+      if (view instanceof LineView)
+        newPos = view.domAtPos(0);
     }
     for (let i = pos.offset - 1; !newPos && i >= 0; i--) {
-      let view2 = ContentView.get(dom.childNodes[i]);
-      if (view2 instanceof LineView)
-        newPos = view2.domAtPos(view2.length);
+      let view = ContentView.get(dom.childNodes[i]);
+      if (view instanceof LineView)
+        newPos = view.domAtPos(view.length);
     }
     return newPos ? new DOMPos(newPos.node, newPos.offset, true) : pos;
   }
@@ -6501,10 +6501,10 @@ var DocView = class extends ContentView {
     return null;
   }
   posFromDOM(node, offset) {
-    let view2 = this.nearest(node);
-    if (!view2)
+    let view = this.nearest(node);
+    if (!view)
       throw new RangeError("Trying to find position for a DOM position outside of the document");
-    return view2.localPosFromDOM(node, offset) + view2.posAtStart;
+    return view.localPosFromDOM(node, offset) + view.posAtStart;
   }
   domAtPos(pos) {
     let { i, off } = this.childCursor().findPos(pos, -1);
@@ -6713,8 +6713,8 @@ var DocView = class extends ContentView {
 function betweenUneditable(pos) {
   return pos.node.nodeType == 1 && pos.node.firstChild && (pos.offset == 0 || pos.node.childNodes[pos.offset - 1].contentEditable == "false") && (pos.offset == pos.node.childNodes.length || pos.node.childNodes[pos.offset].contentEditable == "false");
 }
-function findCompositionNode(view2, headPos) {
-  let sel = view2.observer.selectionRange;
+function findCompositionNode(view, headPos) {
+  let sel = view.observer.selectionRange;
   if (!sel.focusNode)
     return null;
   let textBefore = textNodeBefore(sel.focusNode, sel.focusOffset);
@@ -6724,26 +6724,26 @@ function findCompositionNode(view2, headPos) {
     let descAfter = ContentView.get(textAfter.node);
     if (!descAfter || descAfter instanceof TextView && descAfter.text != textAfter.node.nodeValue) {
       textNode = textAfter;
-    } else if (view2.docView.lastCompositionAfterCursor) {
+    } else if (view.docView.lastCompositionAfterCursor) {
       let descBefore = ContentView.get(textBefore.node);
       if (!(!descBefore || descBefore instanceof TextView && descBefore.text != textBefore.node.nodeValue))
         textNode = textAfter;
     }
   }
-  view2.docView.lastCompositionAfterCursor = textNode != textBefore;
+  view.docView.lastCompositionAfterCursor = textNode != textBefore;
   if (!textNode)
     return null;
   let from = headPos - textNode.offset;
   return { from, to: from + textNode.node.nodeValue.length, node: textNode.node };
 }
-function findCompositionRange(view2, changes, headPos) {
-  let found = findCompositionNode(view2, headPos);
+function findCompositionRange(view, changes, headPos) {
+  let found = findCompositionNode(view, headPos);
   if (!found)
     return null;
   let { node: textNode, from, to } = found, text = textNode.nodeValue;
   if (/[\n\r]/.test(text))
     return null;
-  if (view2.state.doc.sliceString(found.from, found.to) != text)
+  if (view.state.doc.sliceString(found.from, found.to) != text)
     return null;
   let inv = changes.invertedDesc;
   let range = new ChangedRange(inv.mapPos(from), inv.mapPos(to), from, to);
@@ -6752,9 +6752,9 @@ function findCompositionRange(view2, changes, headPos) {
     let parentView = ContentView.get(parent);
     if (parentView instanceof MarkView)
       marks2.push({ node: parent, deco: parentView.mark });
-    else if (parentView instanceof LineView || parent.nodeName == "DIV" && parent.parentNode == view2.contentDOM)
+    else if (parentView instanceof LineView || parent.nodeName == "DIV" && parent.parentNode == view.contentDOM)
       return { range, text: textNode, marks: marks2, line: parent };
-    else if (parent != view2.contentDOM)
+    else if (parent != view.contentDOM)
       marks2.push({ node: parent, deco: new MarkDecoration({
         inclusive: true,
         attributes: getAttrs(parent),
@@ -6928,17 +6928,17 @@ function domPosInText(node, x, y) {
   }
   return { node, offset: closestOffset > -1 ? closestOffset : generalSide > 0 ? node.nodeValue.length : 0 };
 }
-function posAtCoords(view2, coords, precise, bias = -1) {
+function posAtCoords(view, coords, precise, bias = -1) {
   var _a2, _b;
-  let content2 = view2.contentDOM.getBoundingClientRect(), docTop = content2.top + view2.viewState.paddingTop;
-  let block, { docHeight } = view2.viewState;
+  let content2 = view.contentDOM.getBoundingClientRect(), docTop = content2.top + view.viewState.paddingTop;
+  let block, { docHeight } = view.viewState;
   let { x, y } = coords, yOffset = y - docTop;
   if (yOffset < 0)
     return 0;
   if (yOffset > docHeight)
-    return view2.state.doc.length;
-  for (let halfLine = view2.viewState.heightOracle.textHeight / 2, bounced = false; ; ) {
-    block = view2.elementAtHeight(yOffset);
+    return view.state.doc.length;
+  for (let halfLine = view.viewState.heightOracle.textHeight / 2, bounced = false; ; ) {
+    block = view.elementAtHeight(yOffset);
     if (block.type == BlockType.Text)
       break;
     for (; ; ) {
@@ -6953,23 +6953,23 @@ function posAtCoords(view2, coords, precise, bias = -1) {
   }
   y = docTop + yOffset;
   let lineStart = block.from;
-  if (lineStart < view2.viewport.from)
-    return view2.viewport.from == 0 ? 0 : precise ? null : posAtCoordsImprecise(view2, content2, block, x, y);
-  if (lineStart > view2.viewport.to)
-    return view2.viewport.to == view2.state.doc.length ? view2.state.doc.length : precise ? null : posAtCoordsImprecise(view2, content2, block, x, y);
-  let doc2 = view2.dom.ownerDocument;
-  let root = view2.root.elementFromPoint ? view2.root : doc2;
+  if (lineStart < view.viewport.from)
+    return view.viewport.from == 0 ? 0 : precise ? null : posAtCoordsImprecise(view, content2, block, x, y);
+  if (lineStart > view.viewport.to)
+    return view.viewport.to == view.state.doc.length ? view.state.doc.length : precise ? null : posAtCoordsImprecise(view, content2, block, x, y);
+  let doc2 = view.dom.ownerDocument;
+  let root = view.root.elementFromPoint ? view.root : doc2;
   let element = root.elementFromPoint(x, y);
-  if (element && !view2.contentDOM.contains(element))
+  if (element && !view.contentDOM.contains(element))
     element = null;
   if (!element) {
     x = Math.max(content2.left + 1, Math.min(content2.right - 1, x));
     element = root.elementFromPoint(x, y);
-    if (element && !view2.contentDOM.contains(element))
+    if (element && !view.contentDOM.contains(element))
       element = null;
   }
   let node, offset = -1;
-  if (element && ((_a2 = view2.docView.nearest(element)) === null || _a2 === void 0 ? void 0 : _a2.isEditable) != false) {
+  if (element && ((_a2 = view.docView.nearest(element)) === null || _a2 === void 0 ? void 0 : _a2.isEditable) != false) {
     if (doc2.caretPositionFromPoint) {
       let pos = doc2.caretPositionFromPoint(x, y);
       if (pos)
@@ -6978,20 +6978,20 @@ function posAtCoords(view2, coords, precise, bias = -1) {
       let range = doc2.caretRangeFromPoint(x, y);
       if (range) {
         ({ startContainer: node, startOffset: offset } = range);
-        if (!view2.contentDOM.contains(node) || browser.safari && isSuspiciousSafariCaretResult(node, offset, x) || browser.chrome && isSuspiciousChromeCaretResult(node, offset, x))
+        if (!view.contentDOM.contains(node) || browser.safari && isSuspiciousSafariCaretResult(node, offset, x) || browser.chrome && isSuspiciousChromeCaretResult(node, offset, x))
           node = void 0;
       }
     }
     if (node)
       offset = Math.min(maxOffset(node), offset);
   }
-  if (!node || !view2.docView.dom.contains(node)) {
-    let line = LineView.find(view2.docView, lineStart);
+  if (!node || !view.docView.dom.contains(node)) {
+    let line = LineView.find(view.docView, lineStart);
     if (!line)
       return yOffset > block.top + block.height / 2 ? block.to : block.from;
     ({ node, offset } = domPosAtCoords(line.dom, x, y));
   }
-  let nearest = view2.docView.nearest(node);
+  let nearest = view.docView.nearest(node);
   if (!nearest)
     return null;
   if (nearest.isWidget && ((_b = nearest.dom) === null || _b === void 0 ? void 0 : _b.nodeType) == 1) {
@@ -7001,15 +7001,15 @@ function posAtCoords(view2, coords, precise, bias = -1) {
     return nearest.localPosFromDOM(node, offset) + nearest.posAtStart;
   }
 }
-function posAtCoordsImprecise(view2, contentRect, block, x, y) {
-  let into = Math.round((x - contentRect.left) * view2.defaultCharacterWidth);
-  if (view2.lineWrapping && block.height > view2.defaultLineHeight * 1.5) {
-    let textHeight = view2.viewState.heightOracle.textHeight;
-    let line = Math.floor((y - block.top - (view2.defaultLineHeight - textHeight) * 0.5) / textHeight);
-    into += line * view2.viewState.heightOracle.lineLength;
+function posAtCoordsImprecise(view, contentRect, block, x, y) {
+  let into = Math.round((x - contentRect.left) * view.defaultCharacterWidth);
+  if (view.lineWrapping && block.height > view.defaultLineHeight * 1.5) {
+    let textHeight = view.viewState.heightOracle.textHeight;
+    let line = Math.floor((y - block.top - (view.defaultLineHeight - textHeight) * 0.5) / textHeight);
+    into += line * view.viewState.heightOracle.lineLength;
   }
-  let content2 = view2.state.sliceDoc(block.from, block.to);
-  return block.from + findColumn(content2, into, view2.state.tabSize);
+  let content2 = view.state.sliceDoc(block.from, block.to);
+  return block.from + findColumn(content2, into, view.state.tabSize);
 }
 function isSuspiciousSafariCaretResult(node, offset, x) {
   let len, scan = node;
@@ -7044,8 +7044,8 @@ function isSuspiciousChromeCaretResult(node, offset, x) {
   let rect = node.nodeType == 1 ? node.getBoundingClientRect() : textRange(node, 0, Math.max(node.nodeValue.length, 1)).getBoundingClientRect();
   return x - rect.left > 5;
 }
-function blockAt(view2, pos, side) {
-  let line = view2.lineBlockAt(pos);
+function blockAt(view, pos, side) {
+  let line = view.lineBlockAt(pos);
   if (Array.isArray(line.type)) {
     let best;
     for (let l of line.type) {
@@ -7062,13 +7062,13 @@ function blockAt(view2, pos, side) {
   }
   return line;
 }
-function moveToLineBoundary(view2, start, forward, includeWrap) {
-  let line = blockAt(view2, start.head, start.assoc || -1);
-  let coords = !includeWrap || line.type != BlockType.Text || !(view2.lineWrapping || line.widgetLineBreaks) ? null : view2.coordsAtPos(start.assoc < 0 && start.head > line.from ? start.head - 1 : start.head);
+function moveToLineBoundary(view, start, forward, includeWrap) {
+  let line = blockAt(view, start.head, start.assoc || -1);
+  let coords = !includeWrap || line.type != BlockType.Text || !(view.lineWrapping || line.widgetLineBreaks) ? null : view.coordsAtPos(start.assoc < 0 && start.head > line.from ? start.head - 1 : start.head);
   if (coords) {
-    let editorRect = view2.dom.getBoundingClientRect();
-    let direction = view2.textDirectionAt(line.from);
-    let pos = view2.posAtCoords({
+    let editorRect = view.dom.getBoundingClientRect();
+    let direction = view.textDirectionAt(line.from);
+    let pos = view.posAtCoords({
       x: forward == (direction == Direction.LTR) ? editorRect.right - 1 : editorRect.left + 1,
       y: (coords.top + coords.bottom) / 2
     });
@@ -7077,18 +7077,18 @@ function moveToLineBoundary(view2, start, forward, includeWrap) {
   }
   return EditorSelection.cursor(forward ? line.to : line.from, forward ? -1 : 1);
 }
-function moveByChar(view2, start, forward, by) {
-  let line = view2.state.doc.lineAt(start.head), spans = view2.bidiSpans(line);
-  let direction = view2.textDirectionAt(line.from);
+function moveByChar(view, start, forward, by) {
+  let line = view.state.doc.lineAt(start.head), spans = view.bidiSpans(line);
+  let direction = view.textDirectionAt(line.from);
   for (let cur2 = start, check = null; ; ) {
     let next = moveVisually(line, spans, direction, cur2, forward), char = movedOver;
     if (!next) {
-      if (line.number == (forward ? view2.state.doc.lines : 1))
+      if (line.number == (forward ? view.state.doc.lines : 1))
         return cur2;
       char = "\n";
-      line = view2.state.doc.line(line.number + (forward ? 1 : -1));
-      spans = view2.bidiSpans(line);
-      next = view2.visualLineSide(line, !forward);
+      line = view.state.doc.line(line.number + (forward ? 1 : -1));
+      spans = view.bidiSpans(line);
+      next = view.visualLineSide(line, !forward);
     }
     if (!check) {
       if (!by)
@@ -7100,8 +7100,8 @@ function moveByChar(view2, start, forward, by) {
     cur2 = next;
   }
 }
-function byGroup(view2, pos, start) {
-  let categorize = view2.state.charCategorizer(pos);
+function byGroup(view, pos, start) {
+  let categorize = view.state.charCategorizer(pos);
   let cat = categorize(start);
   return (next) => {
     let nextCat = categorize(next);
@@ -7110,30 +7110,30 @@ function byGroup(view2, pos, start) {
     return cat == nextCat;
   };
 }
-function moveVertically(view2, start, forward, distance) {
+function moveVertically(view, start, forward, distance) {
   let startPos = start.head, dir = forward ? 1 : -1;
-  if (startPos == (forward ? view2.state.doc.length : 0))
+  if (startPos == (forward ? view.state.doc.length : 0))
     return EditorSelection.cursor(startPos, start.assoc);
   let goal = start.goalColumn, startY;
-  let rect = view2.contentDOM.getBoundingClientRect();
-  let startCoords = view2.coordsAtPos(startPos, start.assoc || -1), docTop = view2.documentTop;
+  let rect = view.contentDOM.getBoundingClientRect();
+  let startCoords = view.coordsAtPos(startPos, start.assoc || -1), docTop = view.documentTop;
   if (startCoords) {
     if (goal == null)
       goal = startCoords.left - rect.left;
     startY = dir < 0 ? startCoords.top : startCoords.bottom;
   } else {
-    let line = view2.viewState.lineBlockAt(startPos);
+    let line = view.viewState.lineBlockAt(startPos);
     if (goal == null)
-      goal = Math.min(rect.right - rect.left, view2.defaultCharacterWidth * (startPos - line.from));
+      goal = Math.min(rect.right - rect.left, view.defaultCharacterWidth * (startPos - line.from));
     startY = (dir < 0 ? line.top : line.bottom) + docTop;
   }
   let resolvedGoal = rect.left + goal;
-  let dist2 = distance !== null && distance !== void 0 ? distance : view2.viewState.heightOracle.textHeight >> 1;
+  let dist2 = distance !== null && distance !== void 0 ? distance : view.viewState.heightOracle.textHeight >> 1;
   for (let extra = 0; ; extra += 10) {
     let curY = startY + (dist2 + extra) * dir;
-    let pos = posAtCoords(view2, { x: resolvedGoal, y: curY }, false, dir);
+    let pos = posAtCoords(view, { x: resolvedGoal, y: curY }, false, dir);
     if (curY < rect.top || curY > rect.bottom || (dir < 0 ? pos < startPos : pos > startPos)) {
-      let charRect = view2.docView.coordsForChar(pos);
+      let charRect = view.docView.coordsForChar(pos);
       let assoc = !charRect || curY < charRect.top ? -1 : 1;
       return EditorSelection.cursor(pos, assoc, void 0, goal);
     }
@@ -7155,8 +7155,8 @@ function skipAtomicRanges(atoms, pos, bias) {
       return pos;
   }
 }
-function skipAtoms(view2, oldPos, pos) {
-  let newPos = skipAtomicRanges(view2.state.facet(atomicRanges).map((f) => f(view2)), pos.from, oldPos.head > pos.from ? -1 : 1);
+function skipAtoms(view, oldPos, pos) {
+  let newPos = skipAtomicRanges(view.state.facet(atomicRanges).map((f) => f(view)), pos.from, oldPos.head > pos.from ? -1 : 1);
   return newPos == pos.from ? pos : EditorSelection.cursor(newPos, newPos < pos.from ? 1 : -1);
 }
 var LineBreakPlaceholder = "\uFFFF";
@@ -7183,8 +7183,8 @@ var DOMReader = class {
       let next = cur2.nextSibling;
       if (next == end)
         break;
-      let view2 = ContentView.get(cur2), nextView = ContentView.get(next);
-      if (view2 && nextView ? view2.breakAfter : (view2 ? view2.breakAfter : isBlockElement(cur2)) || isBlockElement(next) && (cur2.nodeName != "BR" || cur2.cmIgnore) && this.text.length > oldLen)
+      let view = ContentView.get(cur2), nextView = ContentView.get(next);
+      if (view && nextView ? view.breakAfter : (view ? view.breakAfter : isBlockElement(cur2)) || isBlockElement(next) && (cur2.nodeName != "BR" || cur2.cmIgnore) && this.text.length > oldLen)
         this.lineBreak();
       cur2 = next;
     }
@@ -7220,8 +7220,8 @@ var DOMReader = class {
   readNode(node) {
     if (node.cmIgnore)
       return;
-    let view2 = ContentView.get(node);
-    let fromView = view2 && view2.overrideDOMText;
+    let view = ContentView.get(node);
+    let fromView = view && view.overrideDOMText;
     if (fromView != null) {
       this.findPointInside(node, fromView.length);
       for (let i = fromView.iter(); !i.next().done; ) {
@@ -7268,41 +7268,41 @@ var DOMPoint = class {
   }
 };
 var DOMChange = class {
-  constructor(view2, start, end, typeOver) {
+  constructor(view, start, end, typeOver) {
     this.typeOver = typeOver;
     this.bounds = null;
     this.text = "";
     this.domChanged = start > -1;
-    let { impreciseHead: iHead, impreciseAnchor: iAnchor } = view2.docView;
-    if (view2.state.readOnly && start > -1) {
+    let { impreciseHead: iHead, impreciseAnchor: iAnchor } = view.docView;
+    if (view.state.readOnly && start > -1) {
       this.newSel = null;
-    } else if (start > -1 && (this.bounds = view2.docView.domBoundsAround(start, end, 0))) {
-      let selPoints = iHead || iAnchor ? [] : selectionPoints(view2);
-      let reader = new DOMReader(selPoints, view2.state);
+    } else if (start > -1 && (this.bounds = view.docView.domBoundsAround(start, end, 0))) {
+      let selPoints = iHead || iAnchor ? [] : selectionPoints(view);
+      let reader = new DOMReader(selPoints, view.state);
       reader.readRange(this.bounds.startDOM, this.bounds.endDOM);
       this.text = reader.text;
       this.newSel = selectionFromPoints(selPoints, this.bounds.from);
     } else {
-      let domSel = view2.observer.selectionRange;
-      let head = iHead && iHead.node == domSel.focusNode && iHead.offset == domSel.focusOffset || !contains(view2.contentDOM, domSel.focusNode) ? view2.state.selection.main.head : view2.docView.posFromDOM(domSel.focusNode, domSel.focusOffset);
-      let anchor = iAnchor && iAnchor.node == domSel.anchorNode && iAnchor.offset == domSel.anchorOffset || !contains(view2.contentDOM, domSel.anchorNode) ? view2.state.selection.main.anchor : view2.docView.posFromDOM(domSel.anchorNode, domSel.anchorOffset);
-      let vp = view2.viewport;
-      if ((browser.ios || browser.chrome) && view2.state.selection.main.empty && head != anchor && (vp.from > 0 || vp.to < view2.state.doc.length)) {
+      let domSel = view.observer.selectionRange;
+      let head = iHead && iHead.node == domSel.focusNode && iHead.offset == domSel.focusOffset || !contains(view.contentDOM, domSel.focusNode) ? view.state.selection.main.head : view.docView.posFromDOM(domSel.focusNode, domSel.focusOffset);
+      let anchor = iAnchor && iAnchor.node == domSel.anchorNode && iAnchor.offset == domSel.anchorOffset || !contains(view.contentDOM, domSel.anchorNode) ? view.state.selection.main.anchor : view.docView.posFromDOM(domSel.anchorNode, domSel.anchorOffset);
+      let vp = view.viewport;
+      if ((browser.ios || browser.chrome) && view.state.selection.main.empty && head != anchor && (vp.from > 0 || vp.to < view.state.doc.length)) {
         let from = Math.min(head, anchor), to = Math.max(head, anchor);
         let offFrom = vp.from - from, offTo = vp.to - to;
-        if ((offFrom == 0 || offFrom == 1 || from == 0) && (offTo == 0 || offTo == -1 || to == view2.state.doc.length)) {
+        if ((offFrom == 0 || offFrom == 1 || from == 0) && (offTo == 0 || offTo == -1 || to == view.state.doc.length)) {
           head = 0;
-          anchor = view2.state.doc.length;
+          anchor = view.state.doc.length;
         }
       }
       this.newSel = EditorSelection.single(anchor, head);
     }
   }
 };
-function applyDOMChange(view2, domChange) {
+function applyDOMChange(view, domChange) {
   let change;
-  let { newSel } = domChange, sel = view2.state.selection.main;
-  let lastKey = view2.inputState.lastKeyTime > Date.now() - 100 ? view2.inputState.lastKeyCode : -1;
+  let { newSel } = domChange, sel = view.state.selection.main;
+  let lastKey = view.inputState.lastKeyTime > Date.now() - 100 ? view.inputState.lastKeyCode : -1;
   if (domChange.bounds) {
     let { from, to } = domChange.bounds;
     let preferredPos = sel.from, preferredSide = null;
@@ -7310,7 +7310,7 @@ function applyDOMChange(view2, domChange) {
       preferredPos = sel.to;
       preferredSide = "end";
     }
-    let diff = findDiff(view2.state.doc.sliceString(from, to, LineBreakPlaceholder), domChange.text, preferredPos - from, preferredSide);
+    let diff = findDiff(view.state.doc.sliceString(from, to, LineBreakPlaceholder), domChange.text, preferredPos - from, preferredSide);
     if (diff) {
       if (browser.chrome && lastKey == 13 && diff.toB == diff.from + 2 && domChange.text.slice(diff.from, diff.toB) == LineBreakPlaceholder + LineBreakPlaceholder)
         diff.toB--;
@@ -7320,14 +7320,14 @@ function applyDOMChange(view2, domChange) {
         insert: Text.of(domChange.text.slice(diff.from, diff.toB).split(LineBreakPlaceholder))
       };
     }
-  } else if (newSel && (!view2.hasFocus && view2.state.facet(editable) || newSel.main.eq(sel))) {
+  } else if (newSel && (!view.hasFocus && view.state.facet(editable) || newSel.main.eq(sel))) {
     newSel = null;
   }
   if (!change && !newSel)
     return false;
   if (!change && domChange.typeOver && !sel.empty && newSel && newSel.main.empty) {
-    change = { from: sel.from, to: sel.to, insert: view2.state.doc.slice(sel.from, sel.to) };
-  } else if ((browser.mac || browser.android) && change && change.from == change.to && change.from == sel.head - 1 && /^\. ?$/.test(change.insert.toString()) && view2.contentDOM.getAttribute("autocorrect") == "off") {
+    change = { from: sel.from, to: sel.to, insert: view.state.doc.slice(sel.from, sel.to) };
+  } else if ((browser.mac || browser.android) && change && change.from == change.to && change.from == sel.head - 1 && /^\. ?$/.test(change.insert.toString()) && view.contentDOM.getAttribute("autocorrect") == "off") {
     if (newSel && change.insert.length == 2)
       newSel = EditorSelection.single(newSel.main.anchor - 1, newSel.main.head - 1);
     change = { from: change.from, to: change.to, insert: Text.of([change.insert.toString().replace(".", " ")]) };
@@ -7335,69 +7335,69 @@ function applyDOMChange(view2, domChange) {
     change = {
       from: sel.from,
       to: sel.to,
-      insert: view2.state.doc.slice(sel.from, change.from).append(change.insert).append(view2.state.doc.slice(change.to, sel.to))
+      insert: view.state.doc.slice(sel.from, change.from).append(change.insert).append(view.state.doc.slice(change.to, sel.to))
     };
-  } else if (browser.chrome && change && change.from == change.to && change.from == sel.head && change.insert.toString() == "\n " && view2.lineWrapping) {
+  } else if (browser.chrome && change && change.from == change.to && change.from == sel.head && change.insert.toString() == "\n " && view.lineWrapping) {
     if (newSel)
       newSel = EditorSelection.single(newSel.main.anchor - 1, newSel.main.head - 1);
     change = { from: sel.from, to: sel.to, insert: Text.of([" "]) };
   }
   if (change) {
-    return applyDOMChangeInner(view2, change, newSel, lastKey);
+    return applyDOMChangeInner(view, change, newSel, lastKey);
   } else if (newSel && !newSel.main.eq(sel)) {
     let scrollIntoView3 = false, userEvent = "select";
-    if (view2.inputState.lastSelectionTime > Date.now() - 50) {
-      if (view2.inputState.lastSelectionOrigin == "select")
+    if (view.inputState.lastSelectionTime > Date.now() - 50) {
+      if (view.inputState.lastSelectionOrigin == "select")
         scrollIntoView3 = true;
-      userEvent = view2.inputState.lastSelectionOrigin;
+      userEvent = view.inputState.lastSelectionOrigin;
     }
-    view2.dispatch({ selection: newSel, scrollIntoView: scrollIntoView3, userEvent });
+    view.dispatch({ selection: newSel, scrollIntoView: scrollIntoView3, userEvent });
     return true;
   } else {
     return false;
   }
 }
-function applyDOMChangeInner(view2, change, newSel, lastKey = -1) {
-  if (browser.ios && view2.inputState.flushIOSKey(change))
+function applyDOMChangeInner(view, change, newSel, lastKey = -1) {
+  if (browser.ios && view.inputState.flushIOSKey(change))
     return true;
-  let sel = view2.state.selection.main;
+  let sel = view.state.selection.main;
   if (browser.android && (change.to == sel.to && // GBoard will sometimes remove a space it just inserted
   // after a completion when you press enter
-  (change.from == sel.from || change.from == sel.from - 1 && view2.state.sliceDoc(change.from, sel.from) == " ") && change.insert.length == 1 && change.insert.lines == 2 && dispatchKey(view2.contentDOM, "Enter", 13) || (change.from == sel.from - 1 && change.to == sel.to && change.insert.length == 0 || lastKey == 8 && change.insert.length < change.to - change.from && change.to > sel.head) && dispatchKey(view2.contentDOM, "Backspace", 8) || change.from == sel.from && change.to == sel.to + 1 && change.insert.length == 0 && dispatchKey(view2.contentDOM, "Delete", 46)))
+  (change.from == sel.from || change.from == sel.from - 1 && view.state.sliceDoc(change.from, sel.from) == " ") && change.insert.length == 1 && change.insert.lines == 2 && dispatchKey(view.contentDOM, "Enter", 13) || (change.from == sel.from - 1 && change.to == sel.to && change.insert.length == 0 || lastKey == 8 && change.insert.length < change.to - change.from && change.to > sel.head) && dispatchKey(view.contentDOM, "Backspace", 8) || change.from == sel.from && change.to == sel.to + 1 && change.insert.length == 0 && dispatchKey(view.contentDOM, "Delete", 46)))
     return true;
   let text = change.insert.toString();
-  if (view2.inputState.composing >= 0)
-    view2.inputState.composing++;
+  if (view.inputState.composing >= 0)
+    view.inputState.composing++;
   let defaultTr;
-  let defaultInsert = () => defaultTr || (defaultTr = applyDefaultInsert(view2, change, newSel));
-  if (!view2.state.facet(inputHandler).some((h) => h(view2, change.from, change.to, text, defaultInsert)))
-    view2.dispatch(defaultInsert());
+  let defaultInsert = () => defaultTr || (defaultTr = applyDefaultInsert(view, change, newSel));
+  if (!view.state.facet(inputHandler).some((h) => h(view, change.from, change.to, text, defaultInsert)))
+    view.dispatch(defaultInsert());
   return true;
 }
-function applyDefaultInsert(view2, change, newSel) {
-  let tr, startState = view2.state, sel = startState.selection.main;
-  if (change.from >= sel.from && change.to <= sel.to && change.to - change.from >= (sel.to - sel.from) / 3 && (!newSel || newSel.main.empty && newSel.main.from == change.from + change.insert.length) && view2.inputState.composing < 0) {
+function applyDefaultInsert(view, change, newSel) {
+  let tr, startState = view.state, sel = startState.selection.main;
+  if (change.from >= sel.from && change.to <= sel.to && change.to - change.from >= (sel.to - sel.from) / 3 && (!newSel || newSel.main.empty && newSel.main.from == change.from + change.insert.length) && view.inputState.composing < 0) {
     let before = sel.from < change.from ? startState.sliceDoc(sel.from, change.from) : "";
     let after = sel.to > change.to ? startState.sliceDoc(change.to, sel.to) : "";
-    tr = startState.replaceSelection(view2.state.toText(before + change.insert.sliceString(0, void 0, view2.state.lineBreak) + after));
+    tr = startState.replaceSelection(view.state.toText(before + change.insert.sliceString(0, void 0, view.state.lineBreak) + after));
   } else {
     let changes = startState.changes(change);
     let mainSel = newSel && newSel.main.to <= changes.newLength ? newSel.main : void 0;
-    if (startState.selection.ranges.length > 1 && view2.inputState.composing >= 0 && change.to <= sel.to && change.to >= sel.to - 10) {
-      let replaced = view2.state.sliceDoc(change.from, change.to);
-      let compositionRange, composition = newSel && findCompositionNode(view2, newSel.main.head);
+    if (startState.selection.ranges.length > 1 && view.inputState.composing >= 0 && change.to <= sel.to && change.to >= sel.to - 10) {
+      let replaced = view.state.sliceDoc(change.from, change.to);
+      let compositionRange, composition = newSel && findCompositionNode(view, newSel.main.head);
       if (composition) {
         let dLen = change.insert.length - (change.to - change.from);
         compositionRange = { from: composition.from, to: composition.to - dLen };
       } else {
-        compositionRange = view2.state.doc.lineAt(sel.head);
+        compositionRange = view.state.doc.lineAt(sel.head);
       }
       let offset = sel.to - change.to, size = sel.to - sel.from;
       tr = startState.changeByRange((range) => {
         if (range.from == sel.from && range.to == sel.to)
           return { changes, range: mainSel || range.map(changes) };
         let to = range.to - offset, from = to - replaced.length;
-        if (range.to - range.from != size || view2.state.sliceDoc(from, to) != replaced || // Unfortunately, there's no way to make multiple
+        if (range.to - range.from != size || view.state.sliceDoc(from, to) != replaced || // Unfortunately, there's no way to make multiple
         // changes in the same node work without aborting
         // composition, so cursors in the composition range are
         // ignored.
@@ -7417,12 +7417,12 @@ function applyDefaultInsert(view2, change, newSel) {
     }
   }
   let userEvent = "input.type";
-  if (view2.composing || view2.inputState.compositionPendingChange && view2.inputState.compositionEndedAt > Date.now() - 50) {
-    view2.inputState.compositionPendingChange = false;
+  if (view.composing || view.inputState.compositionPendingChange && view.inputState.compositionEndedAt > Date.now() - 50) {
+    view.inputState.compositionPendingChange = false;
     userEvent += ".compose";
-    if (view2.inputState.compositionFirstChange) {
+    if (view.inputState.compositionFirstChange) {
       userEvent += ".start";
-      view2.inputState.compositionFirstChange = false;
+      view.inputState.compositionFirstChange = false;
     }
   }
   return startState.update(tr, { userEvent, scrollIntoView: true });
@@ -7456,11 +7456,11 @@ function findDiff(a, b, preferredPos, preferredSide) {
   }
   return { from, toA, toB };
 }
-function selectionPoints(view2) {
+function selectionPoints(view) {
   let result = [];
-  if (view2.root.activeElement != view2.contentDOM)
+  if (view.root.activeElement != view.contentDOM)
     return result;
-  let { anchorNode, anchorOffset, focusNode, focusOffset } = view2.observer.selectionRange;
+  let { anchorNode, anchorOffset, focusNode, focusOffset } = view.observer.selectionRange;
   if (anchorNode) {
     result.push(new DOMPoint(anchorNode, anchorOffset));
     if (focusNode != anchorNode || focusOffset != anchorOffset)
@@ -7479,8 +7479,8 @@ var InputState = class {
     this.lastSelectionOrigin = origin;
     this.lastSelectionTime = Date.now();
   }
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.lastKeyCode = 0;
     this.lastKeyTime = 0;
     this.lastTouchTime = 0;
@@ -7502,11 +7502,11 @@ var InputState = class {
     this.mouseSelection = null;
     this.draggedContent = null;
     this.handleEvent = this.handleEvent.bind(this);
-    this.notifiedFocused = view2.hasFocus;
+    this.notifiedFocused = view.hasFocus;
     if (browser.safari)
-      view2.contentDOM.addEventListener("input", () => null);
+      view.contentDOM.addEventListener("input", () => null);
     if (browser.gecko)
-      firefoxCopyCutHack(view2.contentDOM.ownerDocument);
+      firefoxCopyCutHack(view.contentDOM.ownerDocument);
   }
   handleEvent(event) {
     if (!eventBelongsToEditor(this.view, event) || this.ignoreDuringComposition(event))
@@ -7612,11 +7612,11 @@ var InputState = class {
   }
 };
 function bindHandler(plugin, handler) {
-  return (view2, event) => {
+  return (view, event) => {
     try {
-      return handler.call(plugin, event, view2);
+      return handler.call(plugin, event, view);
     } catch (e) {
-      logException(view2.state, e);
+      logException(view.state, e);
     }
   };
 }
@@ -7662,22 +7662,22 @@ function dist(a, b) {
   return Math.max(Math.abs(a.clientX - b.clientX), Math.abs(a.clientY - b.clientY));
 }
 var MouseSelection = class {
-  constructor(view2, startEvent, style, mustSelect) {
-    this.view = view2;
+  constructor(view, startEvent, style, mustSelect) {
+    this.view = view;
     this.startEvent = startEvent;
     this.style = style;
     this.mustSelect = mustSelect;
     this.scrollSpeed = { x: 0, y: 0 };
     this.scrolling = -1;
     this.lastEvent = startEvent;
-    this.scrollParents = scrollableParents(view2.contentDOM);
-    this.atoms = view2.state.facet(atomicRanges).map((f) => f(view2));
-    let doc2 = view2.contentDOM.ownerDocument;
+    this.scrollParents = scrollableParents(view.contentDOM);
+    this.atoms = view.state.facet(atomicRanges).map((f) => f(view));
+    let doc2 = view.contentDOM.ownerDocument;
     doc2.addEventListener("mousemove", this.move = this.move.bind(this));
     doc2.addEventListener("mouseup", this.up = this.up.bind(this));
     this.extend = startEvent.shiftKey;
-    this.multiple = view2.state.facet(EditorState.allowMultipleSelections) && addsSelectionRange(view2, startEvent);
-    this.dragging = isInPrimarySelection(view2, startEvent) && getClickType(startEvent) == 1 ? null : false;
+    this.multiple = view.state.facet(EditorState.allowMultipleSelections) && addsSelectionRange(view, startEvent);
+    this.dragging = isInPrimarySelection(view, startEvent) && getClickType(startEvent) == 1 ? null : false;
   }
   start(event) {
     if (this.dragging === false)
@@ -7768,8 +7768,8 @@ var MouseSelection = class {
     return ranges ? EditorSelection.create(ranges, sel.mainIndex) : sel;
   }
   select(event) {
-    let { view: view2 } = this, selection2 = this.skipAtoms(this.style.get(event, this.extend, this.multiple));
-    if (this.mustSelect || !selection2.eq(view2.state.selection, this.dragging === false))
+    let { view } = this, selection2 = this.skipAtoms(this.style.get(event, this.extend, this.multiple));
+    if (this.mustSelect || !selection2.eq(view.state.selection, this.dragging === false))
       this.view.dispatch({
         selection: selection2,
         userEvent: "select.pointer"
@@ -7783,19 +7783,19 @@ var MouseSelection = class {
       setTimeout(() => this.select(this.lastEvent), 20);
   }
 };
-function addsSelectionRange(view2, event) {
-  let facet = view2.state.facet(clickAddsSelectionRange);
+function addsSelectionRange(view, event) {
+  let facet = view.state.facet(clickAddsSelectionRange);
   return facet.length ? facet[0](event) : browser.mac ? event.metaKey : event.ctrlKey;
 }
-function dragMovesSelection(view2, event) {
-  let facet = view2.state.facet(dragMovesSelection$1);
+function dragMovesSelection(view, event) {
+  let facet = view.state.facet(dragMovesSelection$1);
   return facet.length ? facet[0](event) : browser.mac ? !event.altKey : !event.ctrlKey;
 }
-function isInPrimarySelection(view2, event) {
-  let { main } = view2.state.selection;
+function isInPrimarySelection(view, event) {
+  let { main } = view.state.selection;
   if (main.empty)
     return false;
-  let sel = getSelection(view2.root);
+  let sel = getSelection(view.root);
   if (!sel || sel.rangeCount == 0)
     return true;
   let rects = sel.getRangeAt(0).getClientRects();
@@ -7806,12 +7806,12 @@ function isInPrimarySelection(view2, event) {
   }
   return false;
 }
-function eventBelongsToEditor(view2, event) {
+function eventBelongsToEditor(view, event) {
   if (!event.bubbles)
     return true;
   if (event.defaultPrevented)
     return false;
-  for (let node = event.target, cView; node != view2.contentDOM; node = node.parentNode)
+  for (let node = event.target, cView; node != view.contentDOM; node = node.parentNode)
     if (!node || node.nodeType == 11 || (cView = ContentView.get(node)) && cView.ignoreEvent(event))
       return false;
   return true;
@@ -7819,17 +7819,17 @@ function eventBelongsToEditor(view2, event) {
 var handlers = /* @__PURE__ */ Object.create(null);
 var observers = /* @__PURE__ */ Object.create(null);
 var brokenClipboardAPI = browser.ie && browser.ie_version < 15 || browser.ios && browser.webkit_version < 604;
-function capturePaste(view2) {
-  let parent = view2.dom.parentNode;
+function capturePaste(view) {
+  let parent = view.dom.parentNode;
   if (!parent)
     return;
   let target = parent.appendChild(document.createElement("textarea"));
   target.style.cssText = "position: fixed; left: -10000px; top: 10px";
   target.focus();
   setTimeout(() => {
-    view2.focus();
+    view.focus();
     target.remove();
-    doPaste(view2, target.value);
+    doPaste(view, target.value);
   }, 50);
 }
 function textFilter(state, facet, text) {
@@ -7837,9 +7837,9 @@ function textFilter(state, facet, text) {
     text = filter(text, state);
   return text;
 }
-function doPaste(view2, input) {
-  input = textFilter(view2.state, clipboardInputFilter, input);
-  let { state } = view2, changes, i = 1, text = state.toText(input);
+function doPaste(view, input) {
+  input = textFilter(view.state, clipboardInputFilter, input);
+  let { state } = view, changes, i = 1, text = state.toText(input);
   let byLine = text.lines == state.selection.ranges.length;
   let linewise = lastLinewiseCopy != null && state.selection.ranges.every((r) => r.empty) && lastLinewiseCopy == text.toString();
   if (linewise) {
@@ -7866,51 +7866,51 @@ function doPaste(view2, input) {
   } else {
     changes = state.replaceSelection(text);
   }
-  view2.dispatch(changes, {
+  view.dispatch(changes, {
     userEvent: "input.paste",
     scrollIntoView: true
   });
 }
-observers.scroll = (view2) => {
-  view2.inputState.lastScrollTop = view2.scrollDOM.scrollTop;
-  view2.inputState.lastScrollLeft = view2.scrollDOM.scrollLeft;
+observers.scroll = (view) => {
+  view.inputState.lastScrollTop = view.scrollDOM.scrollTop;
+  view.inputState.lastScrollLeft = view.scrollDOM.scrollLeft;
 };
-handlers.keydown = (view2, event) => {
-  view2.inputState.setSelectionOrigin("select");
-  if (event.keyCode == 27 && view2.inputState.tabFocusMode != 0)
-    view2.inputState.tabFocusMode = Date.now() + 2e3;
+handlers.keydown = (view, event) => {
+  view.inputState.setSelectionOrigin("select");
+  if (event.keyCode == 27 && view.inputState.tabFocusMode != 0)
+    view.inputState.tabFocusMode = Date.now() + 2e3;
   return false;
 };
-observers.touchstart = (view2, e) => {
-  view2.inputState.lastTouchTime = Date.now();
-  view2.inputState.setSelectionOrigin("select.pointer");
+observers.touchstart = (view, e) => {
+  view.inputState.lastTouchTime = Date.now();
+  view.inputState.setSelectionOrigin("select.pointer");
 };
-observers.touchmove = (view2) => {
-  view2.inputState.setSelectionOrigin("select.pointer");
+observers.touchmove = (view) => {
+  view.inputState.setSelectionOrigin("select.pointer");
 };
-handlers.mousedown = (view2, event) => {
-  view2.observer.flush();
-  if (view2.inputState.lastTouchTime > Date.now() - 2e3)
+handlers.mousedown = (view, event) => {
+  view.observer.flush();
+  if (view.inputState.lastTouchTime > Date.now() - 2e3)
     return false;
   let style = null;
-  for (let makeStyle of view2.state.facet(mouseSelectionStyle)) {
-    style = makeStyle(view2, event);
+  for (let makeStyle of view.state.facet(mouseSelectionStyle)) {
+    style = makeStyle(view, event);
     if (style)
       break;
   }
   if (!style && event.button == 0)
-    style = basicMouseSelection(view2, event);
+    style = basicMouseSelection(view, event);
   if (style) {
-    let mustFocus = !view2.hasFocus;
-    view2.inputState.startMouseSelection(new MouseSelection(view2, event, style, mustFocus));
+    let mustFocus = !view.hasFocus;
+    view.inputState.startMouseSelection(new MouseSelection(view, event, style, mustFocus));
     if (mustFocus)
-      view2.observer.ignore(() => {
-        focusPreventScroll(view2.contentDOM);
-        let active = view2.root.activeElement;
-        if (active && !active.contains(view2.contentDOM))
+      view.observer.ignore(() => {
+        focusPreventScroll(view.contentDOM);
+        let active = view.root.activeElement;
+        if (active && !active.contains(view.contentDOM))
           active.blur();
       });
-    let mouseSel = view2.inputState.mouseSelection;
+    let mouseSel = view.inputState.mouseSelection;
     if (mouseSel) {
       mouseSel.start(event);
       return mouseSel.dragging === false;
@@ -7918,22 +7918,22 @@ handlers.mousedown = (view2, event) => {
   }
   return false;
 };
-function rangeForClick(view2, pos, bias, type) {
+function rangeForClick(view, pos, bias, type) {
   if (type == 1) {
     return EditorSelection.cursor(pos, bias);
   } else if (type == 2) {
-    return groupAt(view2.state, pos, bias);
+    return groupAt(view.state, pos, bias);
   } else {
-    let visual = LineView.find(view2.docView, pos), line = view2.state.doc.lineAt(visual ? visual.posAtEnd : pos);
+    let visual = LineView.find(view.docView, pos), line = view.state.doc.lineAt(visual ? visual.posAtEnd : pos);
     let from = visual ? visual.posAtStart : line.from, to = visual ? visual.posAtEnd : line.to;
-    if (to < view2.state.doc.length && to == line.to)
+    if (to < view.state.doc.length && to == line.to)
       to++;
     return EditorSelection.range(from, to);
   }
 }
 var inside = (x, y, rect) => y >= rect.top && y <= rect.bottom && x >= rect.left && x <= rect.right;
-function findPositionSide(view2, pos, x, y) {
-  let line = LineView.find(view2.docView, pos);
+function findPositionSide(view, pos, x, y) {
+  let line = LineView.find(view.docView, pos);
   if (!line)
     return 1;
   let off = pos - line.posAtStart;
@@ -7949,9 +7949,9 @@ function findPositionSide(view2, pos, x, y) {
     return 1;
   return before && before.bottom >= y ? -1 : 1;
 }
-function queryPos(view2, event) {
-  let pos = view2.posAtCoords({ x: event.clientX, y: event.clientY }, false);
-  return { pos, bias: findPositionSide(view2, pos, event.clientX, event.clientY) };
+function queryPos(view, event) {
+  let pos = view.posAtCoords({ x: event.clientX, y: event.clientY }, false);
+  return { pos, bias: findPositionSide(view, pos, event.clientX, event.clientY) };
 }
 var BadMouseDetail = browser.ie && browser.ie_version <= 11;
 var lastMouseDown = null;
@@ -7965,9 +7965,9 @@ function getClickType(event) {
   lastMouseDownTime = Date.now();
   return lastMouseDownCount = !last || lastTime > Date.now() - 400 && Math.abs(last.clientX - event.clientX) < 2 && Math.abs(last.clientY - event.clientY) < 2 ? (lastMouseDownCount + 1) % 3 : 1;
 }
-function basicMouseSelection(view2, event) {
-  let start = queryPos(view2, event), type = getClickType(event);
-  let startSel = view2.state.selection;
+function basicMouseSelection(view, event) {
+  let start = queryPos(view, event), type = getClickType(event);
+  let startSel = view.state.selection;
   return {
     update(update) {
       if (update.docChanged) {
@@ -7976,10 +7976,10 @@ function basicMouseSelection(view2, event) {
       }
     },
     get(event2, extend, multiple) {
-      let cur2 = queryPos(view2, event2), removed;
-      let range = rangeForClick(view2, cur2.pos, cur2.bias, type);
+      let cur2 = queryPos(view, event2), removed;
+      let range = rangeForClick(view, cur2.pos, cur2.bias, type);
       if (start.pos != cur2.pos && !extend) {
-        let startRange = rangeForClick(view2, start.pos, start.bias, type);
+        let startRange = rangeForClick(view, start.pos, start.bias, type);
         let from = Math.min(startRange.from, range.from), to = Math.max(startRange.to, range.to);
         range = from < range.from ? EditorSelection.range(from, to) : EditorSelection.range(to, from);
       }
@@ -8002,58 +8002,58 @@ function removeRangeAround(sel, pos) {
   }
   return null;
 }
-handlers.dragstart = (view2, event) => {
-  let { selection: { main: range } } = view2.state;
+handlers.dragstart = (view, event) => {
+  let { selection: { main: range } } = view.state;
   if (event.target.draggable) {
-    let cView = view2.docView.nearest(event.target);
+    let cView = view.docView.nearest(event.target);
     if (cView && cView.isWidget) {
       let from = cView.posAtStart, to = from + cView.length;
       if (from >= range.to || to <= range.from)
         range = EditorSelection.range(from, to);
     }
   }
-  let { inputState } = view2;
+  let { inputState } = view;
   if (inputState.mouseSelection)
     inputState.mouseSelection.dragging = true;
   inputState.draggedContent = range;
   if (event.dataTransfer) {
-    event.dataTransfer.setData("Text", textFilter(view2.state, clipboardOutputFilter, view2.state.sliceDoc(range.from, range.to)));
+    event.dataTransfer.setData("Text", textFilter(view.state, clipboardOutputFilter, view.state.sliceDoc(range.from, range.to)));
     event.dataTransfer.effectAllowed = "copyMove";
   }
   return false;
 };
-handlers.dragend = (view2) => {
-  view2.inputState.draggedContent = null;
+handlers.dragend = (view) => {
+  view.inputState.draggedContent = null;
   return false;
 };
-function dropText(view2, event, text, direct) {
-  text = textFilter(view2.state, clipboardInputFilter, text);
+function dropText(view, event, text, direct) {
+  text = textFilter(view.state, clipboardInputFilter, text);
   if (!text)
     return;
-  let dropPos = view2.posAtCoords({ x: event.clientX, y: event.clientY }, false);
-  let { draggedContent } = view2.inputState;
-  let del = direct && draggedContent && dragMovesSelection(view2, event) ? { from: draggedContent.from, to: draggedContent.to } : null;
+  let dropPos = view.posAtCoords({ x: event.clientX, y: event.clientY }, false);
+  let { draggedContent } = view.inputState;
+  let del = direct && draggedContent && dragMovesSelection(view, event) ? { from: draggedContent.from, to: draggedContent.to } : null;
   let ins = { from: dropPos, insert: text };
-  let changes = view2.state.changes(del ? [del, ins] : ins);
-  view2.focus();
-  view2.dispatch({
+  let changes = view.state.changes(del ? [del, ins] : ins);
+  view.focus();
+  view.dispatch({
     changes,
     selection: { anchor: changes.mapPos(dropPos, -1), head: changes.mapPos(dropPos, 1) },
     userEvent: del ? "move.drop" : "input.drop"
   });
-  view2.inputState.draggedContent = null;
+  view.inputState.draggedContent = null;
 }
-handlers.drop = (view2, event) => {
+handlers.drop = (view, event) => {
   if (!event.dataTransfer)
     return false;
-  if (view2.state.readOnly)
+  if (view.state.readOnly)
     return true;
   let files = event.dataTransfer.files;
   if (files && files.length) {
     let text = Array(files.length), read = 0;
     let finishFile = () => {
       if (++read == files.length)
-        dropText(view2, event, text.filter((s) => s != null).join(view2.state.lineBreak), false);
+        dropText(view, event, text.filter((s) => s != null).join(view.state.lineBreak), false);
     };
     for (let i = 0; i < files.length; i++) {
       let reader = new FileReader();
@@ -8069,27 +8069,27 @@ handlers.drop = (view2, event) => {
   } else {
     let text = event.dataTransfer.getData("Text");
     if (text) {
-      dropText(view2, event, text, true);
+      dropText(view, event, text, true);
       return true;
     }
   }
   return false;
 };
-handlers.paste = (view2, event) => {
-  if (view2.state.readOnly)
+handlers.paste = (view, event) => {
+  if (view.state.readOnly)
     return true;
-  view2.observer.flush();
+  view.observer.flush();
   let data = brokenClipboardAPI ? null : event.clipboardData;
   if (data) {
-    doPaste(view2, data.getData("text/plain") || data.getData("text/uri-list"));
+    doPaste(view, data.getData("text/plain") || data.getData("text/uri-list"));
     return true;
   } else {
-    capturePaste(view2);
+    capturePaste(view);
     return false;
   }
 };
-function captureCopy(view2, text) {
-  let parent = view2.dom.parentNode;
+function captureCopy(view, text) {
+  let parent = view.dom.parentNode;
   if (!parent)
     return;
   let target = parent.appendChild(document.createElement("textarea"));
@@ -8100,7 +8100,7 @@ function captureCopy(view2, text) {
   target.selectionStart = 0;
   setTimeout(() => {
     target.remove();
-    view2.focus();
+    view.focus();
   }, 50);
 }
 function copiedRange(state) {
@@ -8125,13 +8125,13 @@ function copiedRange(state) {
   return { text: textFilter(state, clipboardOutputFilter, content2.join(state.lineBreak)), ranges, linewise };
 }
 var lastLinewiseCopy = null;
-handlers.copy = handlers.cut = (view2, event) => {
-  let { text, ranges, linewise } = copiedRange(view2.state);
+handlers.copy = handlers.cut = (view, event) => {
+  let { text, ranges, linewise } = copiedRange(view.state);
   if (!text && !linewise)
     return false;
   lastLinewiseCopy = linewise ? text : null;
-  if (event.type == "cut" && !view2.state.readOnly)
-    view2.dispatch({
+  if (event.type == "cut" && !view.state.readOnly)
+    view.dispatch({
       changes: ranges,
       scrollIntoView: true,
       userEvent: "delete.cut"
@@ -8142,7 +8142,7 @@ handlers.copy = handlers.cut = (view2, event) => {
     data.setData("text/plain", text);
     return true;
   } else {
-    captureCopy(view2, text);
+    captureCopy(view, text);
     return false;
   }
 };
@@ -8156,91 +8156,91 @@ function focusChangeTransaction(state, focus) {
   }
   return effects.length ? state.update({ effects, annotations: isFocusChange.of(true) }) : null;
 }
-function updateForFocusChange(view2) {
+function updateForFocusChange(view) {
   setTimeout(() => {
-    let focus = view2.hasFocus;
-    if (focus != view2.inputState.notifiedFocused) {
-      let tr = focusChangeTransaction(view2.state, focus);
+    let focus = view.hasFocus;
+    if (focus != view.inputState.notifiedFocused) {
+      let tr = focusChangeTransaction(view.state, focus);
       if (tr)
-        view2.dispatch(tr);
+        view.dispatch(tr);
       else
-        view2.update([]);
+        view.update([]);
     }
   }, 10);
 }
-observers.focus = (view2) => {
-  view2.inputState.lastFocusTime = Date.now();
-  if (!view2.scrollDOM.scrollTop && (view2.inputState.lastScrollTop || view2.inputState.lastScrollLeft)) {
-    view2.scrollDOM.scrollTop = view2.inputState.lastScrollTop;
-    view2.scrollDOM.scrollLeft = view2.inputState.lastScrollLeft;
+observers.focus = (view) => {
+  view.inputState.lastFocusTime = Date.now();
+  if (!view.scrollDOM.scrollTop && (view.inputState.lastScrollTop || view.inputState.lastScrollLeft)) {
+    view.scrollDOM.scrollTop = view.inputState.lastScrollTop;
+    view.scrollDOM.scrollLeft = view.inputState.lastScrollLeft;
   }
-  updateForFocusChange(view2);
+  updateForFocusChange(view);
 };
-observers.blur = (view2) => {
-  view2.observer.clearSelectionRange();
-  updateForFocusChange(view2);
+observers.blur = (view) => {
+  view.observer.clearSelectionRange();
+  updateForFocusChange(view);
 };
-observers.compositionstart = observers.compositionupdate = (view2) => {
-  if (view2.observer.editContext)
+observers.compositionstart = observers.compositionupdate = (view) => {
+  if (view.observer.editContext)
     return;
-  if (view2.inputState.compositionFirstChange == null)
-    view2.inputState.compositionFirstChange = true;
-  if (view2.inputState.composing < 0) {
-    view2.inputState.composing = 0;
+  if (view.inputState.compositionFirstChange == null)
+    view.inputState.compositionFirstChange = true;
+  if (view.inputState.composing < 0) {
+    view.inputState.composing = 0;
   }
 };
-observers.compositionend = (view2) => {
-  if (view2.observer.editContext)
+observers.compositionend = (view) => {
+  if (view.observer.editContext)
     return;
-  view2.inputState.composing = -1;
-  view2.inputState.compositionEndedAt = Date.now();
-  view2.inputState.compositionPendingKey = true;
-  view2.inputState.compositionPendingChange = view2.observer.pendingRecords().length > 0;
-  view2.inputState.compositionFirstChange = null;
+  view.inputState.composing = -1;
+  view.inputState.compositionEndedAt = Date.now();
+  view.inputState.compositionPendingKey = true;
+  view.inputState.compositionPendingChange = view.observer.pendingRecords().length > 0;
+  view.inputState.compositionFirstChange = null;
   if (browser.chrome && browser.android) {
-    view2.observer.flushSoon();
-  } else if (view2.inputState.compositionPendingChange) {
-    Promise.resolve().then(() => view2.observer.flush());
+    view.observer.flushSoon();
+  } else if (view.inputState.compositionPendingChange) {
+    Promise.resolve().then(() => view.observer.flush());
   } else {
     setTimeout(() => {
-      if (view2.inputState.composing < 0 && view2.docView.hasComposition)
-        view2.update([]);
+      if (view.inputState.composing < 0 && view.docView.hasComposition)
+        view.update([]);
     }, 50);
   }
 };
-observers.contextmenu = (view2) => {
-  view2.inputState.lastContextMenu = Date.now();
+observers.contextmenu = (view) => {
+  view.inputState.lastContextMenu = Date.now();
 };
-handlers.beforeinput = (view2, event) => {
+handlers.beforeinput = (view, event) => {
   var _a2, _b;
-  if (event.inputType == "insertReplacementText" && view2.observer.editContext) {
+  if (event.inputType == "insertReplacementText" && view.observer.editContext) {
     let text = (_a2 = event.dataTransfer) === null || _a2 === void 0 ? void 0 : _a2.getData("text/plain"), ranges = event.getTargetRanges();
     if (text && ranges.length) {
       let r = ranges[0];
-      let from = view2.posAtDOM(r.startContainer, r.startOffset), to = view2.posAtDOM(r.endContainer, r.endOffset);
-      applyDOMChangeInner(view2, { from, to, insert: view2.state.toText(text) }, null);
+      let from = view.posAtDOM(r.startContainer, r.startOffset), to = view.posAtDOM(r.endContainer, r.endOffset);
+      applyDOMChangeInner(view, { from, to, insert: view.state.toText(text) }, null);
       return true;
     }
   }
   let pending;
   if (browser.chrome && browser.android && (pending = PendingKeys.find((key) => key.inputType == event.inputType))) {
-    view2.observer.delayAndroidKey(pending.key, pending.keyCode);
+    view.observer.delayAndroidKey(pending.key, pending.keyCode);
     if (pending.key == "Backspace" || pending.key == "Delete") {
       let startViewHeight = ((_b = window.visualViewport) === null || _b === void 0 ? void 0 : _b.height) || 0;
       setTimeout(() => {
         var _a3;
-        if ((((_a3 = window.visualViewport) === null || _a3 === void 0 ? void 0 : _a3.height) || 0) > startViewHeight + 10 && view2.hasFocus) {
-          view2.contentDOM.blur();
-          view2.focus();
+        if ((((_a3 = window.visualViewport) === null || _a3 === void 0 ? void 0 : _a3.height) || 0) > startViewHeight + 10 && view.hasFocus) {
+          view.contentDOM.blur();
+          view.focus();
         }
       }, 100);
     }
   }
   if (browser.ios && event.inputType == "deleteContentForward") {
-    view2.observer.flushSoon();
+    view.observer.flushSoon();
   }
-  if (browser.safari && event.inputType == "insertText" && view2.inputState.composing >= 0) {
-    setTimeout(() => observers.compositionend(view2, event), 20);
+  if (browser.safari && event.inputType == "insertText" && view.inputState.composing >= 0) {
+    setTimeout(() => observers.compositionend(view, event), 20);
   }
   return false;
 };
@@ -9133,8 +9133,8 @@ var ViewState = class {
     if (!this.mustEnforceCursorAssoc && update.selectionSet && update.view.lineWrapping && update.state.selection.main.empty && update.state.selection.main.assoc && !update.state.facet(nativeSelectionHidden))
       this.mustEnforceCursorAssoc = true;
   }
-  measure(view2) {
-    let dom = view2.contentDOM, style = window.getComputedStyle(dom);
+  measure(view) {
+    let dom = view.contentDOM, style = window.getComputedStyle(dom);
     let oracle = this.heightOracle;
     let whiteSpace = style.whiteSpace;
     this.defaultTextDirection = style.direction == "rtl" ? Direction.RTL : Direction.LTR;
@@ -9160,18 +9160,18 @@ var ViewState = class {
       this.paddingBottom = paddingBottom;
       result |= 16 | 2;
     }
-    if (this.editorWidth != view2.scrollDOM.clientWidth) {
+    if (this.editorWidth != view.scrollDOM.clientWidth) {
       if (oracle.lineWrapping)
         measureContent = true;
-      this.editorWidth = view2.scrollDOM.clientWidth;
+      this.editorWidth = view.scrollDOM.clientWidth;
       result |= 16;
     }
-    let scrollTop = view2.scrollDOM.scrollTop * this.scaleY;
+    let scrollTop = view.scrollDOM.scrollTop * this.scaleY;
     if (this.scrollTop != scrollTop) {
       this.scrollAnchorHeight = -1;
       this.scrollTop = scrollTop;
     }
-    this.scrolledToBottom = isScrolledToBottom(view2.scrollDOM);
+    this.scrolledToBottom = isScrolledToBottom(view.scrollDOM);
     let pixelViewport = (this.printing ? fullPixelRange : visiblePixelRange)(dom, this.paddingTop);
     let dTop = pixelViewport.top - this.pixelViewport.top, dBottom = pixelViewport.bottom - this.pixelViewport.bottom;
     this.pixelViewport = pixelViewport;
@@ -9181,23 +9181,23 @@ var ViewState = class {
       if (inView)
         measureContent = true;
     }
-    if (!this.inView && !this.scrollTarget && !inWindow(view2.dom))
+    if (!this.inView && !this.scrollTarget && !inWindow(view.dom))
       return 0;
     let contentWidth = domRect.width;
-    if (this.contentDOMWidth != contentWidth || this.editorHeight != view2.scrollDOM.clientHeight) {
+    if (this.contentDOMWidth != contentWidth || this.editorHeight != view.scrollDOM.clientHeight) {
       this.contentDOMWidth = domRect.width;
-      this.editorHeight = view2.scrollDOM.clientHeight;
+      this.editorHeight = view.scrollDOM.clientHeight;
       result |= 16;
     }
     if (measureContent) {
-      let lineHeights = view2.docView.measureVisibleLineHeights(this.viewport);
+      let lineHeights = view.docView.measureVisibleLineHeights(this.viewport);
       if (oracle.mustRefreshForHeights(lineHeights))
         refresh = true;
       if (refresh || oracle.lineWrapping && Math.abs(contentWidth - this.contentDOMWidth) > oracle.charWidth) {
-        let { lineHeight, charWidth, textHeight } = view2.docView.measureTextSize();
+        let { lineHeight, charWidth, textHeight } = view.docView.measureTextSize();
         refresh = lineHeight > 0 && oracle.refresh(whiteSpace, lineHeight, charWidth, textHeight, Math.max(5, contentWidth / charWidth), lineHeights);
         if (refresh) {
-          view2.docView.minWidth = 0;
+          view.docView.minWidth = 0;
           result |= 16;
         }
       }
@@ -9207,8 +9207,8 @@ var ViewState = class {
         bias = Math.min(dTop, dBottom);
       clearHeightChangeFlag();
       for (let vp of this.viewports) {
-        let heights = vp.from == this.viewport.from ? lineHeights : view2.docView.measureVisibleLineHeights(vp);
-        this.heightMap = (refresh ? HeightMap.empty().applyChanges(this.stateDeco, Text.empty, this.heightOracle, [new ChangedRange(0, 0, 0, view2.state.doc.length)]) : this.heightMap).updateHeight(oracle, 0, refresh, new MeasuredHeights(vp.from, heights));
+        let heights = vp.from == this.viewport.from ? lineHeights : view.docView.measureVisibleLineHeights(vp);
+        this.heightMap = (refresh ? HeightMap.empty().applyChanges(this.stateDeco, Text.empty, this.heightOracle, [new ChangedRange(0, 0, 0, view.state.doc.length)]) : this.heightMap).updateHeight(oracle, 0, refresh, new MeasuredHeights(vp.from, heights));
       }
       if (heightChangeFlag)
         result |= 2;
@@ -9223,11 +9223,11 @@ var ViewState = class {
     if (result & 2 || viewportChange)
       this.updateViewportLines();
     if (this.lineGaps.length || this.viewport.to - this.viewport.from > 2e3 << 1)
-      this.updateLineGaps(this.ensureLineGaps(refresh ? [] : this.lineGaps, view2));
+      this.updateLineGaps(this.ensureLineGaps(refresh ? [] : this.lineGaps, view));
     result |= this.computeVisibleRanges();
     if (this.mustEnforceCursorAssoc) {
       this.mustEnforceCursorAssoc = false;
-      view2.docView.enforceCursorAssoc();
+      view.docView.enforceCursorAssoc();
     }
     return result;
   }
@@ -9862,8 +9862,8 @@ var observeOptions = {
 };
 var useCharData = browser.ie && browser.ie_version <= 11;
 var DOMObserver = class {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.active = false;
     this.editContext = null;
     this.selectionRange = new DOMSelectionState();
@@ -9882,20 +9882,20 @@ var DOMObserver = class {
     this.gaps = [];
     this.printQuery = null;
     this.parentCheck = -1;
-    this.dom = view2.contentDOM;
+    this.dom = view.contentDOM;
     this.observer = new MutationObserver((mutations) => {
       for (let mut of mutations)
         this.queue.push(mut);
-      if ((browser.ie && browser.ie_version <= 11 || browser.ios && view2.composing) && mutations.some((m) => m.type == "childList" && m.removedNodes.length || m.type == "characterData" && m.oldValue.length > m.target.nodeValue.length))
+      if ((browser.ie && browser.ie_version <= 11 || browser.ios && view.composing) && mutations.some((m) => m.type == "childList" && m.removedNodes.length || m.type == "characterData" && m.oldValue.length > m.target.nodeValue.length))
         this.flushSoon();
       else
         this.flush();
     });
-    if (window.EditContext && browser.android && view2.constructor.EDIT_CONTEXT !== false && // Chrome <126 doesn't support inverted selections in edit context (#1392)
+    if (window.EditContext && browser.android && view.constructor.EDIT_CONTEXT !== false && // Chrome <126 doesn't support inverted selections in edit context (#1392)
     !(browser.chrome && browser.chrome_version < 126)) {
-      this.editContext = new EditContextManager(view2);
-      if (view2.state.facet(editable))
-        view2.contentDOM.editContext = this.editContext.editContext;
+      this.editContext = new EditContextManager(view);
+      if (view.state.facet(editable))
+        view.contentDOM.editContext = this.editContext.editContext;
     }
     if (useCharData)
       this.onCharData = (event) => {
@@ -9918,9 +9918,9 @@ var DOMObserver = class {
         if (((_a2 = this.view.docView) === null || _a2 === void 0 ? void 0 : _a2.lastUpdate) < Date.now() - 75)
           this.onResize();
       });
-      this.resizeScroll.observe(view2.scrollDOM);
+      this.resizeScroll.observe(view.scrollDOM);
     }
-    this.addWindowListeners(this.win = view2.win);
+    this.addWindowListeners(this.win = view.win);
     this.start();
     if (typeof IntersectionObserver == "function") {
       this.intersection = new IntersectionObserver((entries) => {
@@ -9982,33 +9982,33 @@ var DOMObserver = class {
     let wasChanged = this.selectionChanged;
     if (!this.readSelectionRange() || this.delayedAndroidKey)
       return;
-    let { view: view2 } = this, sel = this.selectionRange;
-    if (view2.state.facet(editable) ? view2.root.activeElement != this.dom : !hasSelection(this.dom, sel))
+    let { view } = this, sel = this.selectionRange;
+    if (view.state.facet(editable) ? view.root.activeElement != this.dom : !hasSelection(this.dom, sel))
       return;
-    let context = sel.anchorNode && view2.docView.nearest(sel.anchorNode);
+    let context = sel.anchorNode && view.docView.nearest(sel.anchorNode);
     if (context && context.ignoreEvent(event)) {
       if (!wasChanged)
         this.selectionChanged = false;
       return;
     }
-    if ((browser.ie && browser.ie_version <= 11 || browser.android && browser.chrome) && !view2.state.selection.main.empty && // (Selection.isCollapsed isn't reliable on IE)
+    if ((browser.ie && browser.ie_version <= 11 || browser.android && browser.chrome) && !view.state.selection.main.empty && // (Selection.isCollapsed isn't reliable on IE)
     sel.focusNode && isEquivalentPosition(sel.focusNode, sel.focusOffset, sel.anchorNode, sel.anchorOffset))
       this.flushSoon();
     else
       this.flush(false);
   }
   readSelectionRange() {
-    let { view: view2 } = this;
-    let selection2 = getSelection(view2.root);
+    let { view } = this;
+    let selection2 = getSelection(view.root);
     if (!selection2)
       return false;
-    let range = browser.safari && view2.root.nodeType == 11 && view2.root.activeElement == this.dom && safariSelectionRangeHack(this.view, selection2) || selection2;
+    let range = browser.safari && view.root.nodeType == 11 && view.root.activeElement == this.dom && safariSelectionRangeHack(this.view, selection2) || selection2;
     if (!range || this.selectionRange.eq(range))
       return false;
     let local = hasSelection(this.dom, range);
-    if (local && !this.selectionChanged && view2.inputState.lastFocusTime > Date.now() - 200 && view2.inputState.lastTouchTime < Date.now() - 300 && atElementStart(this.dom, range)) {
+    if (local && !this.selectionChanged && view.inputState.lastFocusTime > Date.now() - 200 && view.inputState.lastTouchTime < Date.now() - 300 && atElementStart(this.dom, range)) {
       this.view.inputState.lastFocusTime = 0;
-      view2.docView.updateSelection();
+      view.docView.updateSelection();
       return false;
     }
     this.selectionRange.setRange(range);
@@ -10280,19 +10280,19 @@ function findChild(cView, dom, dir) {
   }
   return null;
 }
-function buildSelectionRangeFromRange(view2, range) {
+function buildSelectionRangeFromRange(view, range) {
   let anchorNode = range.startContainer, anchorOffset = range.startOffset;
   let focusNode = range.endContainer, focusOffset = range.endOffset;
-  let curAnchor = view2.docView.domAtPos(view2.state.selection.main.anchor);
+  let curAnchor = view.docView.domAtPos(view.state.selection.main.anchor);
   if (isEquivalentPosition(curAnchor.node, curAnchor.offset, focusNode, focusOffset))
     [anchorNode, anchorOffset, focusNode, focusOffset] = [focusNode, focusOffset, anchorNode, anchorOffset];
   return { anchorNode, anchorOffset, focusNode, focusOffset };
 }
-function safariSelectionRangeHack(view2, selection2) {
+function safariSelectionRangeHack(view, selection2) {
   if (selection2.getComposedRanges) {
-    let range = selection2.getComposedRanges(view2.root)[0];
+    let range = selection2.getComposedRanges(view.root)[0];
     if (range)
-      return buildSelectionRangeFromRange(view2, range);
+      return buildSelectionRangeFromRange(view, range);
   }
   let found = null;
   function read(event) {
@@ -10300,28 +10300,28 @@ function safariSelectionRangeHack(view2, selection2) {
     event.stopImmediatePropagation();
     found = event.getTargetRanges()[0];
   }
-  view2.contentDOM.addEventListener("beforeinput", read, true);
-  view2.dom.ownerDocument.execCommand("indent");
-  view2.contentDOM.removeEventListener("beforeinput", read, true);
-  return found ? buildSelectionRangeFromRange(view2, found) : null;
+  view.contentDOM.addEventListener("beforeinput", read, true);
+  view.dom.ownerDocument.execCommand("indent");
+  view.contentDOM.removeEventListener("beforeinput", read, true);
+  return found ? buildSelectionRangeFromRange(view, found) : null;
 }
 var EditContextManager = class {
-  constructor(view2) {
+  constructor(view) {
     this.from = 0;
     this.to = 0;
     this.pendingContextChange = null;
     this.handlers = /* @__PURE__ */ Object.create(null);
     this.composing = null;
-    this.resetRange(view2.state);
+    this.resetRange(view.state);
     let context = this.editContext = new window.EditContext({
-      text: view2.state.doc.sliceString(this.from, this.to),
-      selectionStart: this.toContextPos(Math.max(this.from, Math.min(this.to, view2.state.selection.main.anchor))),
-      selectionEnd: this.toContextPos(view2.state.selection.main.head)
+      text: view.state.doc.sliceString(this.from, this.to),
+      selectionStart: this.toContextPos(Math.max(this.from, Math.min(this.to, view.state.selection.main.anchor))),
+      selectionEnd: this.toContextPos(view.state.selection.main.head)
     });
     this.handlers.textupdate = (e) => {
-      let main = view2.state.selection.main, { anchor, head } = main;
+      let main = view.state.selection.main, { anchor, head } = main;
       let from = this.toEditorPos(e.updateRangeStart), to = this.toEditorPos(e.updateRangeEnd);
-      if (view2.inputState.composing >= 0 && !this.composing)
+      if (view.inputState.composing >= 0 && !this.composing)
         this.composing = { contextBase: e.updateRangeStart, editorBase: from, drifted: false };
       let change = { from, to, insert: Text.of(e.text.split("\n")) };
       if (change.from == this.from && anchor < this.from)
@@ -10331,25 +10331,25 @@ var EditContextManager = class {
       if (change.from == change.to && !change.insert.length) {
         let newSel = EditorSelection.single(this.toEditorPos(e.selectionStart), this.toEditorPos(e.selectionEnd));
         if (!newSel.main.eq(main))
-          view2.dispatch({ selection: newSel, userEvent: "select" });
+          view.dispatch({ selection: newSel, userEvent: "select" });
         return;
       }
-      if ((browser.mac || browser.android) && change.from == head - 1 && /^\. ?$/.test(e.text) && view2.contentDOM.getAttribute("autocorrect") == "off")
+      if ((browser.mac || browser.android) && change.from == head - 1 && /^\. ?$/.test(e.text) && view.contentDOM.getAttribute("autocorrect") == "off")
         change = { from, to, insert: Text.of([e.text.replace(".", " ")]) };
       this.pendingContextChange = change;
-      if (!view2.state.readOnly) {
+      if (!view.state.readOnly) {
         let newLen = this.to - this.from + (change.to - change.from + change.insert.length);
-        applyDOMChangeInner(view2, change, EditorSelection.single(this.toEditorPos(e.selectionStart, newLen), this.toEditorPos(e.selectionEnd, newLen)));
+        applyDOMChangeInner(view, change, EditorSelection.single(this.toEditorPos(e.selectionStart, newLen), this.toEditorPos(e.selectionEnd, newLen)));
       }
       if (this.pendingContextChange) {
-        this.revertPending(view2.state);
-        this.setSelection(view2.state);
+        this.revertPending(view.state);
+        this.setSelection(view.state);
       }
     };
     this.handlers.characterboundsupdate = (e) => {
       let rects = [], prev = null;
       for (let i = this.toEditorPos(e.rangeStart), end = this.toEditorPos(e.rangeEnd); i < end; i++) {
-        let rect = view2.coordsForChar(i);
+        let rect = view.coordsForChar(i);
         prev = rect && new DOMRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top) || prev || new DOMRect();
         rects.push(prev);
       }
@@ -10367,29 +10367,29 @@ var EditContextManager = class {
           }
         }
       }
-      view2.dispatch({ effects: setEditContextFormatting.of(Decoration.set(deco)) });
+      view.dispatch({ effects: setEditContextFormatting.of(Decoration.set(deco)) });
     };
     this.handlers.compositionstart = () => {
-      if (view2.inputState.composing < 0) {
-        view2.inputState.composing = 0;
-        view2.inputState.compositionFirstChange = true;
+      if (view.inputState.composing < 0) {
+        view.inputState.composing = 0;
+        view.inputState.compositionFirstChange = true;
       }
     };
     this.handlers.compositionend = () => {
-      view2.inputState.composing = -1;
-      view2.inputState.compositionFirstChange = null;
+      view.inputState.composing = -1;
+      view.inputState.compositionFirstChange = null;
       if (this.composing) {
         let { drifted } = this.composing;
         this.composing = null;
         if (drifted)
-          this.reset(view2.state);
+          this.reset(view.state);
       }
     };
     for (let event in this.handlers)
       context.addEventListener(event, this.handlers[event]);
-    this.measureReq = { read: (view3) => {
-      this.editContext.updateControlBounds(view3.contentDOM.getBoundingClientRect());
-      let sel = getSelection(view3.root);
+    this.measureReq = { read: (view2) => {
+      this.editContext.updateControlBounds(view2.contentDOM.getBoundingClientRect());
+      let sel = getSelection(view2.root);
       if (sel && sel.rangeCount)
         this.editContext.updateSelectionBounds(sel.getRangeAt(0).getBoundingClientRect());
     } };
@@ -11456,9 +11456,9 @@ var CachedOrder = class _CachedOrder {
     return result;
   }
 };
-function attrsFromFacet(view2, facet, base2) {
-  for (let sources = view2.state.facet(facet), i = sources.length - 1; i >= 0; i--) {
-    let source = sources[i], value = typeof source == "function" ? source(view2) : source;
+function attrsFromFacet(view, facet, base2) {
+  for (let sources = view.state.facet(facet), i = sources.length - 1; i >= 0; i--) {
+    let source = sources[i], value = typeof source == "function" ? source(view) : source;
     if (value)
       combineAttrs(value, base2);
   }
@@ -11511,8 +11511,8 @@ function modifiers(name2, event, shift2) {
   return name2;
 }
 var handleKeyEvents = /* @__PURE__ */ Prec.default(/* @__PURE__ */ EditorView.domEventHandlers({
-  keydown(event, view2) {
-    return runHandlers(getKeymap(view2.state), event, view2, "editor");
+  keydown(event, view) {
+    return runHandlers(getKeymap(view.state), event, view, "editor");
   }
 }));
 var keymap = /* @__PURE__ */ Facet.define({ enables: handleKeyEvents });
@@ -11524,8 +11524,8 @@ function getKeymap(state) {
     Keymaps.set(bindings, map = buildKeymap(bindings.reduce((a, b) => a.concat(b), [])));
   return map;
 }
-function runScopeHandlers(view2, event, scope) {
-  return runHandlers(getKeymap(view2.state), event, view2, scope);
+function runScopeHandlers(view, event, scope) {
+  return runHandlers(getKeymap(view.state), event, view, scope);
 }
 var storedPrefix = null;
 var PrefixTimeout = 4e3;
@@ -11550,8 +11550,8 @@ function buildKeymap(bindings, platform = currentPlatform) {
         scopeObj[prefix] = {
           preventDefault: true,
           stopPropagation: false,
-          run: [(view2) => {
-            let ourObj = storedPrefix = { view: view2, prefix, scope };
+          run: [(view) => {
+            let ourObj = storedPrefix = { view, prefix, scope };
             setTimeout(() => {
               if (storedPrefix == ourObj)
                 storedPrefix = null;
@@ -11583,7 +11583,7 @@ function buildKeymap(bindings, platform = currentPlatform) {
           scopeObj._any = { preventDefault: false, stopPropagation: false, run: [] };
         let { any } = b;
         for (let key in scopeObj)
-          scopeObj[key].run.push((view2) => any(view2, currentKeyEvent));
+          scopeObj[key].run.push((view) => any(view, currentKeyEvent));
       }
     let name2 = b[platform] || b.key;
     if (!name2)
@@ -11597,12 +11597,12 @@ function buildKeymap(bindings, platform = currentPlatform) {
   return bound;
 }
 var currentKeyEvent = null;
-function runHandlers(map, event, view2, scope) {
+function runHandlers(map, event, view, scope) {
   currentKeyEvent = event;
   let name2 = keyName(event);
   let charCode = codePointAt2(name2, 0), isChar = codePointSize2(charCode) == name2.length && name2 != " ";
   let prefix = "", handled = false, prevented = false, stopPropagation = false;
-  if (storedPrefix && storedPrefix.view == view2 && storedPrefix.scope == scope) {
+  if (storedPrefix && storedPrefix.view == view && storedPrefix.scope == scope) {
     prefix = storedPrefix.prefix + " ";
     if (modifierCodes.indexOf(event.keyCode) < 0) {
       prevented = true;
@@ -11615,7 +11615,7 @@ function runHandlers(map, event, view2, scope) {
       for (let cmd2 of binding.run)
         if (!ran.has(cmd2)) {
           ran.add(cmd2);
-          if (cmd2(view2)) {
+          if (cmd2(view)) {
             if (binding.stopPropagation)
               stopPropagation = true;
             return true;
@@ -11695,60 +11695,60 @@ var RectangleMarker = class _RectangleMarker {
   rectangles covering the range's content (in a bidi-aware
   way) for non-empty ones.
   */
-  static forRange(view2, className, range) {
+  static forRange(view, className, range) {
     if (range.empty) {
-      let pos = view2.coordsAtPos(range.head, range.assoc || 1);
+      let pos = view.coordsAtPos(range.head, range.assoc || 1);
       if (!pos)
         return [];
-      let base2 = getBase(view2);
+      let base2 = getBase(view);
       return [new _RectangleMarker(className, pos.left - base2.left, pos.top - base2.top, null, pos.bottom - pos.top)];
     } else {
-      return rectanglesForRange(view2, className, range);
+      return rectanglesForRange(view, className, range);
     }
   }
 };
-function getBase(view2) {
-  let rect = view2.scrollDOM.getBoundingClientRect();
-  let left = view2.textDirection == Direction.LTR ? rect.left : rect.right - view2.scrollDOM.clientWidth * view2.scaleX;
-  return { left: left - view2.scrollDOM.scrollLeft * view2.scaleX, top: rect.top - view2.scrollDOM.scrollTop * view2.scaleY };
+function getBase(view) {
+  let rect = view.scrollDOM.getBoundingClientRect();
+  let left = view.textDirection == Direction.LTR ? rect.left : rect.right - view.scrollDOM.clientWidth * view.scaleX;
+  return { left: left - view.scrollDOM.scrollLeft * view.scaleX, top: rect.top - view.scrollDOM.scrollTop * view.scaleY };
 }
-function wrappedLine(view2, pos, side, inside2) {
-  let coords = view2.coordsAtPos(pos, side * 2);
+function wrappedLine(view, pos, side, inside2) {
+  let coords = view.coordsAtPos(pos, side * 2);
   if (!coords)
     return inside2;
-  let editorRect = view2.dom.getBoundingClientRect();
+  let editorRect = view.dom.getBoundingClientRect();
   let y = (coords.top + coords.bottom) / 2;
-  let left = view2.posAtCoords({ x: editorRect.left + 1, y });
-  let right = view2.posAtCoords({ x: editorRect.right - 1, y });
+  let left = view.posAtCoords({ x: editorRect.left + 1, y });
+  let right = view.posAtCoords({ x: editorRect.right - 1, y });
   if (left == null || right == null)
     return inside2;
   return { from: Math.max(inside2.from, Math.min(left, right)), to: Math.min(inside2.to, Math.max(left, right)) };
 }
-function rectanglesForRange(view2, className, range) {
-  if (range.to <= view2.viewport.from || range.from >= view2.viewport.to)
+function rectanglesForRange(view, className, range) {
+  if (range.to <= view.viewport.from || range.from >= view.viewport.to)
     return [];
-  let from = Math.max(range.from, view2.viewport.from), to = Math.min(range.to, view2.viewport.to);
-  let ltr = view2.textDirection == Direction.LTR;
-  let content2 = view2.contentDOM, contentRect = content2.getBoundingClientRect(), base2 = getBase(view2);
+  let from = Math.max(range.from, view.viewport.from), to = Math.min(range.to, view.viewport.to);
+  let ltr = view.textDirection == Direction.LTR;
+  let content2 = view.contentDOM, contentRect = content2.getBoundingClientRect(), base2 = getBase(view);
   let lineElt = content2.querySelector(".cm-line"), lineStyle = lineElt && window.getComputedStyle(lineElt);
   let leftSide = contentRect.left + (lineStyle ? parseInt(lineStyle.paddingLeft) + Math.min(0, parseInt(lineStyle.textIndent)) : 0);
   let rightSide = contentRect.right - (lineStyle ? parseInt(lineStyle.paddingRight) : 0);
-  let startBlock = blockAt(view2, from, 1), endBlock = blockAt(view2, to, -1);
+  let startBlock = blockAt(view, from, 1), endBlock = blockAt(view, to, -1);
   let visualStart = startBlock.type == BlockType.Text ? startBlock : null;
   let visualEnd = endBlock.type == BlockType.Text ? endBlock : null;
-  if (visualStart && (view2.lineWrapping || startBlock.widgetLineBreaks))
-    visualStart = wrappedLine(view2, from, 1, visualStart);
-  if (visualEnd && (view2.lineWrapping || endBlock.widgetLineBreaks))
-    visualEnd = wrappedLine(view2, to, -1, visualEnd);
+  if (visualStart && (view.lineWrapping || startBlock.widgetLineBreaks))
+    visualStart = wrappedLine(view, from, 1, visualStart);
+  if (visualEnd && (view.lineWrapping || endBlock.widgetLineBreaks))
+    visualEnd = wrappedLine(view, to, -1, visualEnd);
   if (visualStart && visualEnd && visualStart.from == visualEnd.from && visualStart.to == visualEnd.to) {
     return pieces(drawForLine(range.from, range.to, visualStart));
   } else {
     let top2 = visualStart ? drawForLine(range.from, null, visualStart) : drawForWidget(startBlock, false);
     let bottom = visualEnd ? drawForLine(null, range.to, visualEnd) : drawForWidget(endBlock, true);
     let between = [];
-    if ((visualStart || startBlock).to < (visualEnd || endBlock).from - (visualStart && visualEnd ? 1 : 0) || startBlock.widgetLineBreaks > 1 && top2.bottom + view2.defaultLineHeight / 2 < bottom.top)
+    if ((visualStart || startBlock).to < (visualEnd || endBlock).from - (visualStart && visualEnd ? 1 : 0) || startBlock.widgetLineBreaks > 1 && top2.bottom + view.defaultLineHeight / 2 < bottom.top)
       between.push(piece(leftSide, top2.bottom, rightSide, bottom.top));
-    else if (top2.bottom < bottom.top && view2.elementAtHeight((top2.bottom + bottom.top) / 2).type == BlockType.Text)
+    else if (top2.bottom < bottom.top && view.elementAtHeight((top2.bottom + bottom.top) / 2).type == BlockType.Text)
       top2.bottom = bottom.top = (top2.bottom + bottom.top) / 2;
     return pieces(top2).concat(between).concat(pieces(bottom));
   }
@@ -11764,8 +11764,8 @@ function rectanglesForRange(view2, className, range) {
   function drawForLine(from2, to2, line) {
     let top2 = 1e9, bottom = -1e9, horizontal = [];
     function addSpan(from3, fromOpen, to3, toOpen, dir) {
-      let fromCoords = view2.coordsAtPos(from3, from3 == line.to ? -2 : 2);
-      let toCoords = view2.coordsAtPos(to3, to3 == line.from ? 2 : -2);
+      let fromCoords = view.coordsAtPos(from3, from3 == line.to ? -2 : 2);
+      let toCoords = view.coordsAtPos(to3, to3 == line.from ? 2 : -2);
       if (!fromCoords || !toCoords)
         return;
       top2 = Math.min(fromCoords.top, toCoords.top, top2);
@@ -11776,11 +11776,11 @@ function rectanglesForRange(view2, className, range) {
         horizontal.push(!ltr && toOpen ? leftSide : toCoords.left, !ltr && fromOpen ? rightSide : fromCoords.right);
     }
     let start = from2 !== null && from2 !== void 0 ? from2 : line.from, end = to2 !== null && to2 !== void 0 ? to2 : line.to;
-    for (let r of view2.visibleRanges)
+    for (let r of view.visibleRanges)
       if (r.to > start && r.from < end) {
         for (let pos = Math.max(r.from, start), endPos = Math.min(r.to, end); ; ) {
-          let docLine = view2.state.doc.lineAt(pos);
-          for (let span of view2.bidiSpans(docLine)) {
+          let docLine = view.state.doc.lineAt(pos);
+          for (let span of view.bidiSpans(docLine)) {
             let spanFrom = span.from + docLine.from, spanTo = span.to + docLine.from;
             if (spanFrom >= endPos)
               break;
@@ -11793,7 +11793,7 @@ function rectanglesForRange(view2, className, range) {
         }
       }
     if (horizontal.length == 0)
-      addSpan(start, from2 == null, end, to2 == null, view2.textDirection);
+      addSpan(start, from2 == null, end, to2 == null, view.textDirection);
     return { top: top2, bottom, horizontal };
   }
   function drawForWidget(block, top2) {
@@ -11805,14 +11805,14 @@ function sameMarker(a, b) {
   return a.constructor == b.constructor && a.eq(b);
 }
 var LayerView = class {
-  constructor(view2, layer2) {
-    this.view = view2;
+  constructor(view, layer2) {
+    this.view = view;
     this.layer = layer2;
     this.drawn = [];
     this.scaleX = 1;
     this.scaleY = 1;
     this.measureReq = { read: this.measure.bind(this), write: this.draw.bind(this) };
-    this.dom = view2.scrollDOM.appendChild(document.createElement("div"));
+    this.dom = view.scrollDOM.appendChild(document.createElement("div"));
     this.dom.classList.add("cm-layer");
     if (layer2.above)
       this.dom.classList.add("cm-layer-above");
@@ -11820,10 +11820,10 @@ var LayerView = class {
       this.dom.classList.add(layer2.class);
     this.scale();
     this.dom.setAttribute("aria-hidden", "true");
-    this.setOrder(view2.state);
-    view2.requestMeasure(this.measureReq);
+    this.setOrder(view.state);
+    view.requestMeasure(this.measureReq);
     if (layer2.mount)
-      layer2.mount(this.dom, view2);
+      layer2.mount(this.dom, view);
   }
   update(update) {
     if (update.startState.facet(layerOrder) != update.state.facet(layerOrder))
@@ -11833,9 +11833,9 @@ var LayerView = class {
       update.view.requestMeasure(this.measureReq);
     }
   }
-  docViewUpdate(view2) {
+  docViewUpdate(view) {
     if (this.layer.updateOnDocViewUpdate !== false)
-      view2.requestMeasure(this.measureReq);
+      view.requestMeasure(this.measureReq);
   }
   setOrder(state) {
     let pos = 0, order = state.facet(layerOrder);
@@ -11911,15 +11911,15 @@ function configChanged(update) {
 }
 var cursorLayer = /* @__PURE__ */ layer({
   above: true,
-  markers(view2) {
-    let { state } = view2, conf = state.facet(selectionConfig);
+  markers(view) {
+    let { state } = view, conf = state.facet(selectionConfig);
     let cursors = [];
     for (let r of state.selection.ranges) {
       let prim = r == state.selection.main;
       if (r.empty || conf.drawRangeCursor) {
         let className = prim ? "cm-cursor cm-cursor-primary" : "cm-cursor cm-cursor-secondary";
         let cursor2 = r.empty ? r : EditorSelection.cursor(r.head, r.head > r.anchor ? -1 : 1);
-        for (let piece of RectangleMarker.forRange(view2, className, cursor2))
+        for (let piece of RectangleMarker.forRange(view, className, cursor2))
           cursors.push(piece);
       }
     }
@@ -11933,8 +11933,8 @@ var cursorLayer = /* @__PURE__ */ layer({
       setBlinkRate(update.state, dom);
     return update.docChanged || update.selectionSet || confChange;
   },
-  mount(dom, view2) {
-    setBlinkRate(view2.state, dom);
+  mount(dom, view) {
+    setBlinkRate(view.state, dom);
   },
   class: "cm-cursorLayer"
 });
@@ -11943,8 +11943,8 @@ function setBlinkRate(state, dom) {
 }
 var selectionLayer = /* @__PURE__ */ layer({
   above: false,
-  markers(view2) {
-    return view2.state.selection.ranges.map((r) => r.empty ? [] : RectangleMarker.forRange(view2, "cm-selectionBackground", r)).reduce((a, b) => a.concat(b));
+  markers(view) {
+    return view.state.selection.ranges.map((r) => r.empty ? [] : RectangleMarker.forRange(view, "cm-selectionBackground", r)).reduce((a, b) => a.concat(b));
   },
   update(update, dom) {
     return update.docChanged || update.selectionSet || update.viewportChanged || configChanged(update);
@@ -11982,8 +11982,8 @@ var dropCursorPos = /* @__PURE__ */ StateField.define({
   }
 });
 var drawDropCursor = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.cursor = null;
     this.measureReq = { read: this.readPos.bind(this), write: this.drawCursor.bind(this) };
   }
@@ -12005,15 +12005,15 @@ var drawDropCursor = /* @__PURE__ */ ViewPlugin.fromClass(class {
     }
   }
   readPos() {
-    let { view: view2 } = this;
-    let pos = view2.state.field(dropCursorPos);
-    let rect = pos != null && view2.coordsAtPos(pos);
+    let { view } = this;
+    let pos = view.state.field(dropCursorPos);
+    let rect = pos != null && view.coordsAtPos(pos);
     if (!rect)
       return null;
-    let outer = view2.scrollDOM.getBoundingClientRect();
+    let outer = view.scrollDOM.getBoundingClientRect();
     return {
-      left: rect.left - outer.left + view2.scrollDOM.scrollLeft * view2.scaleX,
-      top: rect.top - outer.top + view2.scrollDOM.scrollTop * view2.scaleY,
+      left: rect.left - outer.left + view.scrollDOM.scrollLeft * view.scaleX,
+      top: rect.top - outer.top + view.scrollDOM.scrollTop * view.scaleY,
       height: rect.bottom - rect.top
     };
   }
@@ -12065,14 +12065,14 @@ function iterMatches(doc2, re, from, to, f) {
         f(pos + m.index, m);
   }
 }
-function matchRanges(view2, maxLength) {
-  let visible = view2.visibleRanges;
-  if (visible.length == 1 && visible[0].from == view2.viewport.from && visible[0].to == view2.viewport.to)
+function matchRanges(view, maxLength) {
+  let visible = view.visibleRanges;
+  if (visible.length == 1 && visible[0].from == view.viewport.from && visible[0].to == view.viewport.to)
     return visible;
   let result = [];
   for (let { from, to } of visible) {
-    from = Math.max(view2.state.doc.lineAt(from).from, from - maxLength);
-    to = Math.min(view2.state.doc.lineAt(to).to, to + maxLength);
+    from = Math.max(view.state.doc.lineAt(from).from, from - maxLength);
+    to = Math.min(view.state.doc.lineAt(to).to, to + maxLength);
     if (result.length && result[result.length - 1].to >= from)
       result[result.length - 1].to = to;
     else
@@ -12090,10 +12090,10 @@ var MatchDecorator = class {
       throw new RangeError("The regular expression given to MatchDecorator should have its 'g' flag set");
     this.regexp = regexp;
     if (decorate) {
-      this.addMatch = (match, view2, from, add2) => decorate(add2, from, from + match[0].length, match, view2);
+      this.addMatch = (match, view, from, add2) => decorate(add2, from, from + match[0].length, match, view);
     } else if (typeof decoration == "function") {
-      this.addMatch = (match, view2, from, add2) => {
-        let deco = decoration(match, view2, from);
+      this.addMatch = (match, view, from, add2) => {
+        let deco = decoration(match, view, from);
         if (deco)
           add2(from, from + match[0].length, deco);
       };
@@ -12110,10 +12110,10 @@ var MatchDecorator = class {
   view's viewport. You'll want to call this when initializing your
   plugin.
   */
-  createDeco(view2) {
+  createDeco(view) {
     let build = new RangeSetBuilder(), add2 = build.add.bind(build);
-    for (let { from, to } of matchRanges(view2, this.maxLength))
-      iterMatches(view2.state.doc, this.regexp, from, to, (from2, m) => this.addMatch(m, view2, from2, add2));
+    for (let { from, to } of matchRanges(view, this.maxLength))
+      iterMatches(view.state.doc, this.regexp, from, to, (from2, m) => this.addMatch(m, view, from2, add2));
     return build.finish();
   }
   /**
@@ -12136,11 +12136,11 @@ var MatchDecorator = class {
       return this.updateRange(update.view, deco.map(update.changes), changeFrom, changeTo);
     return deco;
   }
-  updateRange(view2, deco, updateFrom, updateTo) {
-    for (let r of view2.visibleRanges) {
+  updateRange(view, deco, updateFrom, updateTo) {
+    for (let r of view.visibleRanges) {
       let from = Math.max(r.from, updateFrom), to = Math.min(r.to, updateTo);
       if (to >= from) {
-        let fromLine = view2.state.doc.lineAt(from), toLine = fromLine.to < to ? view2.state.doc.lineAt(to) : fromLine;
+        let fromLine = view.state.doc.lineAt(from), toLine = fromLine.to < to ? view.state.doc.lineAt(to) : fromLine;
         let start = Math.max(r.from, fromLine.from), end = Math.min(r.to, toLine.to);
         if (this.boundary) {
           for (; from > fromLine.from; from--)
@@ -12159,9 +12159,9 @@ var MatchDecorator = class {
         if (fromLine == toLine) {
           this.regexp.lastIndex = start - fromLine.from;
           while ((m = this.regexp.exec(fromLine.text)) && m.index < end - fromLine.from)
-            this.addMatch(m, view2, m.index + fromLine.from, add2);
+            this.addMatch(m, view, m.index + fromLine.from, add2);
         } else {
-          iterMatches(view2.state.doc, this.regexp, start, end, (from2, m2) => this.addMatch(m2, view2, from2, add2));
+          iterMatches(view.state.doc, this.regexp, start, end, (from2, m2) => this.addMatch(m2, view, from2, add2));
         }
         deco = deco.update({ filterFrom: start, filterTo: end, filter: (from2, to2) => from2 < start || to2 > end, add: ranges });
       }
@@ -12223,22 +12223,22 @@ function highlightSpecialChars(config2 = {}) {
 var _plugin = null;
 function specialCharPlugin() {
   return _plugin || (_plugin = ViewPlugin.fromClass(class {
-    constructor(view2) {
-      this.view = view2;
+    constructor(view) {
+      this.view = view;
       this.decorations = Decoration.none;
       this.decorationCache = /* @__PURE__ */ Object.create(null);
-      this.decorator = this.makeDecorator(view2.state.facet(specialCharConfig));
-      this.decorations = this.decorator.createDeco(view2);
+      this.decorator = this.makeDecorator(view.state.facet(specialCharConfig));
+      this.decorations = this.decorator.createDeco(view);
     }
     makeDecorator(conf) {
       return new MatchDecorator({
         regexp: conf.specialChars,
-        decoration: (m, view2, pos) => {
-          let { doc: doc2 } = view2.state;
+        decoration: (m, view, pos) => {
+          let { doc: doc2 } = view.state;
           let code = codePointAt2(m[0], 0);
           if (code == 9) {
             let line = doc2.lineAt(pos);
-            let size = view2.state.tabSize, col = countColumn(line.text, size, pos - line.from);
+            let size = view.state.tabSize, col = countColumn(line.text, size, pos - line.from);
             return Decoration.replace({
               widget: new TabWidget((size - col % size) * this.view.defaultCharacterWidth / this.view.scaleX)
             });
@@ -12278,9 +12278,9 @@ var SpecialCharWidget = class extends WidgetType {
   eq(other) {
     return other.code == this.code;
   }
-  toDOM(view2) {
+  toDOM(view) {
     let ph = placeholder$1(this.code);
-    let desc = view2.state.phrase("Control character") + " " + (Names[this.code] || "0x" + this.code.toString(16));
+    let desc = view.state.phrase("Control character") + " " + (Names[this.code] || "0x" + this.code.toString(16));
     let custom = this.options.render && this.options.render(this.code, desc, ph);
     if (custom)
       return custom;
@@ -12319,17 +12319,17 @@ function highlightActiveLine() {
 }
 var lineDeco = /* @__PURE__ */ Decoration.line({ class: "cm-activeLine" });
 var activeLineHighlighter = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.decorations = this.getDeco(view2);
+  constructor(view) {
+    this.decorations = this.getDeco(view);
   }
   update(update) {
     if (update.docChanged || update.selectionSet)
       this.decorations = this.getDeco(update.view);
   }
-  getDeco(view2) {
+  getDeco(view) {
     let lastLineStart = -1, deco = [];
-    for (let r of view2.state.selection.ranges) {
-      let line = view2.lineBlockAt(r.head);
+    for (let r of view.state.selection.ranges) {
+      let line = view.lineBlockAt(r.head);
       if (line.from > lastLineStart) {
         deco.push(lineDeco.range(line.from));
         lastLineStart = line.from;
@@ -12366,18 +12366,18 @@ function rectangleFor(state, a, b) {
   }
   return ranges;
 }
-function absoluteColumn(view2, x) {
-  let ref = view2.coordsAtPos(view2.viewport.from);
-  return ref ? Math.round(Math.abs((ref.left - x) / view2.defaultCharacterWidth)) : -1;
+function absoluteColumn(view, x) {
+  let ref = view.coordsAtPos(view.viewport.from);
+  return ref ? Math.round(Math.abs((ref.left - x) / view.defaultCharacterWidth)) : -1;
 }
-function getPos(view2, event) {
-  let offset = view2.posAtCoords({ x: event.clientX, y: event.clientY }, false);
-  let line = view2.state.doc.lineAt(offset), off = offset - line.from;
-  let col = off > MaxOff ? -1 : off == line.length ? absoluteColumn(view2, event.clientX) : countColumn(line.text, view2.state.tabSize, offset - line.from);
+function getPos(view, event) {
+  let offset = view.posAtCoords({ x: event.clientX, y: event.clientY }, false);
+  let line = view.state.doc.lineAt(offset), off = offset - line.from;
+  let col = off > MaxOff ? -1 : off == line.length ? absoluteColumn(view, event.clientX) : countColumn(line.text, view.state.tabSize, offset - line.from);
   return { line: line.number, col, off };
 }
-function rectangleSelectionStyle(view2, event) {
-  let start = getPos(view2, event), startSel = view2.state.selection;
+function rectangleSelectionStyle(view, event) {
+  let start = getPos(view, event), startSel = view.state.selection;
   if (!start)
     return null;
   return {
@@ -12390,10 +12390,10 @@ function rectangleSelectionStyle(view2, event) {
       }
     },
     get(event2, _extend, multiple) {
-      let cur2 = getPos(view2, event2);
+      let cur2 = getPos(view, event2);
       if (!cur2)
         return startSel;
-      let ranges = rectangleFor(view2.state, start, cur2);
+      let ranges = rectangleFor(view.state, start, cur2);
       if (!ranges.length)
         return startSel;
       if (multiple)
@@ -12405,7 +12405,7 @@ function rectangleSelectionStyle(view2, event) {
 }
 function rectangularSelection(options) {
   let filter = (options === null || options === void 0 ? void 0 : options.eventFilter) || ((e) => e.altKey && e.button == 0);
-  return EditorView.mouseSelectionStyle.of((view2, event) => filter(event) ? rectangleSelectionStyle(view2, event) : null);
+  return EditorView.mouseSelectionStyle.of((view, event) => filter(event) ? rectangleSelectionStyle(view, event) : null);
 }
 var keys = {
   Alt: [18, (e) => !!e.altKey],
@@ -12417,8 +12417,8 @@ var showCrosshair = { style: "cursor: crosshair" };
 function crosshairCursor(options = {}) {
   let [code, getter] = keys[options.key || "Alt"];
   let plugin = ViewPlugin.fromClass(class {
-    constructor(view2) {
-      this.view = view2;
+    constructor(view) {
+      this.view = view;
       this.isDown = false;
     }
     set(isDown) {
@@ -12443,19 +12443,19 @@ function crosshairCursor(options = {}) {
   });
   return [
     plugin,
-    EditorView.contentAttributes.of((view2) => {
+    EditorView.contentAttributes.of((view) => {
       var _a2;
-      return ((_a2 = view2.plugin(plugin)) === null || _a2 === void 0 ? void 0 : _a2.isDown) ? showCrosshair : null;
+      return ((_a2 = view.plugin(plugin)) === null || _a2 === void 0 ? void 0 : _a2.isDown) ? showCrosshair : null;
     })
   ];
 }
 var Outside = "-10000px";
 var TooltipViewManager = class {
-  constructor(view2, facet, createTooltipView, removeTooltipView) {
+  constructor(view, facet, createTooltipView, removeTooltipView) {
     this.facet = facet;
     this.createTooltipView = createTooltipView;
     this.removeTooltipView = removeTooltipView;
-    this.input = view2.state.facet(facet);
+    this.input = view.state.facet(facet);
     this.tooltips = this.input.filter((t2) => t2);
     let prev = null;
     this.tooltipViews = this.tooltips.map((t2) => prev = createTooltipView(t2, prev));
@@ -12507,8 +12507,8 @@ var TooltipViewManager = class {
     return true;
   }
 };
-function windowSpace(view2) {
-  let docElt = view2.dom.ownerDocument.documentElement;
+function windowSpace(view) {
+  let docElt = view.dom.ownerDocument.documentElement;
   return { top: 0, left: 0, bottom: docElt.clientHeight, right: docElt.clientWidth };
 }
 var tooltipConfig = /* @__PURE__ */ Facet.define({
@@ -12523,21 +12523,21 @@ var tooltipConfig = /* @__PURE__ */ Facet.define({
 });
 var knownHeight = /* @__PURE__ */ new WeakMap();
 var tooltipPlugin = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.above = [];
     this.inView = true;
     this.madeAbsolute = false;
     this.lastTransaction = 0;
     this.measureTimeout = -1;
-    let config2 = view2.state.facet(tooltipConfig);
+    let config2 = view.state.facet(tooltipConfig);
     this.position = config2.position;
     this.parent = config2.parent;
-    this.classes = view2.themeClasses;
+    this.classes = view.themeClasses;
     this.createContainer();
     this.measureReq = { read: this.readMeasure.bind(this), write: this.writeMeasure.bind(this), key: this };
     this.resizeObserver = typeof ResizeObserver == "function" ? new ResizeObserver(() => this.measureSoon()) : null;
-    this.manager = new TooltipViewManager(view2, showTooltip, (t2, p) => this.createTooltip(t2, p), (t2) => {
+    this.manager = new TooltipViewManager(view, showTooltip, (t2, p) => this.createTooltip(t2, p), (t2) => {
       if (this.resizeObserver)
         this.resizeObserver.unobserve(t2.dom);
       t2.dom.remove();
@@ -12548,7 +12548,7 @@ var tooltipPlugin = /* @__PURE__ */ ViewPlugin.fromClass(class {
         this.measureSoon();
     }, { threshold: [1] }) : null;
     this.observeIntersection();
-    view2.win.addEventListener("resize", this.measureSoon = this.measureSoon.bind(this));
+    view.win.addEventListener("resize", this.measureSoon = this.measureSoon.bind(this));
     this.maybeMeasure();
   }
   createContainer() {
@@ -12834,15 +12834,15 @@ var showHoverTooltip = /* @__PURE__ */ Facet.define({
 });
 var HoverTooltipHost = class _HoverTooltipHost {
   // Needs to be static so that host tooltip instances always match
-  static create(view2) {
-    return new _HoverTooltipHost(view2);
+  static create(view) {
+    return new _HoverTooltipHost(view);
   }
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.mounted = false;
     this.dom = document.createElement("div");
     this.dom.classList.add("cm-tooltip-hover");
-    this.manager = new TooltipViewManager(view2, showHoverTooltip, (t2, p) => this.createHostedView(t2, p), (t2) => t2.dom.remove());
+    this.manager = new TooltipViewManager(view, showHoverTooltip, (t2, p) => this.createHostedView(t2, p), (t2) => t2.dom.remove());
   }
   createHostedView(tooltip, prev) {
     let hostedView = tooltip.create(this.view);
@@ -12852,10 +12852,10 @@ var HoverTooltipHost = class _HoverTooltipHost {
       hostedView.mount(this.view);
     return hostedView;
   }
-  mount(view2) {
+  mount(view) {
     for (let hostedView of this.manager.tooltipViews) {
       if (hostedView.mount)
-        hostedView.mount(view2);
+        hostedView.mount(view);
     }
     this.mounted = true;
   }
@@ -12875,8 +12875,8 @@ var HoverTooltipHost = class _HoverTooltipHost {
   }
   passProp(name2) {
     let value = void 0;
-    for (let view2 of this.manager.tooltipViews) {
-      let given = view2[name2];
+    for (let view of this.manager.tooltipViews) {
+      let given = view[name2];
       if (given !== void 0) {
         if (value === void 0)
           value = given;
@@ -12915,8 +12915,8 @@ var showHoverTooltipHost = /* @__PURE__ */ showTooltip.compute([showHoverTooltip
   };
 });
 var HoverPlugin = class {
-  constructor(view2, source, field, setHover, hoverTime) {
-    this.view = view2;
+  constructor(view, source, field, setHover, hoverTime) {
+    this.view = view;
     this.source = source;
     this.field = field;
     this.setHover = setHover;
@@ -12924,10 +12924,10 @@ var HoverPlugin = class {
     this.hoverTimeout = -1;
     this.restartTimeout = -1;
     this.pending = null;
-    this.lastMove = { x: 0, y: 0, target: view2.dom, time: 0 };
+    this.lastMove = { x: 0, y: 0, target: view.dom, time: 0 };
     this.checkHover = this.checkHover.bind(this);
-    view2.dom.addEventListener("mouseleave", this.mouseleave = this.mouseleave.bind(this));
-    view2.dom.addEventListener("mousemove", this.mousemove = this.mousemove.bind(this));
+    view.dom.addEventListener("mouseleave", this.mouseleave = this.mouseleave.bind(this));
+    view.dom.addEventListener("mousemove", this.mousemove = this.mousemove.bind(this));
   }
   update() {
     if (this.pending) {
@@ -12951,36 +12951,36 @@ var HoverPlugin = class {
   }
   startHover() {
     clearTimeout(this.restartTimeout);
-    let { view: view2, lastMove } = this;
-    let desc = view2.docView.nearest(lastMove.target);
+    let { view, lastMove } = this;
+    let desc = view.docView.nearest(lastMove.target);
     if (!desc)
       return;
     let pos, side = 1;
     if (desc instanceof WidgetView) {
       pos = desc.posAtStart;
     } else {
-      pos = view2.posAtCoords(lastMove);
+      pos = view.posAtCoords(lastMove);
       if (pos == null)
         return;
-      let posCoords = view2.coordsAtPos(pos);
-      if (!posCoords || lastMove.y < posCoords.top || lastMove.y > posCoords.bottom || lastMove.x < posCoords.left - view2.defaultCharacterWidth || lastMove.x > posCoords.right + view2.defaultCharacterWidth)
+      let posCoords = view.coordsAtPos(pos);
+      if (!posCoords || lastMove.y < posCoords.top || lastMove.y > posCoords.bottom || lastMove.x < posCoords.left - view.defaultCharacterWidth || lastMove.x > posCoords.right + view.defaultCharacterWidth)
         return;
-      let bidi = view2.bidiSpans(view2.state.doc.lineAt(pos)).find((s) => s.from <= pos && s.to >= pos);
+      let bidi = view.bidiSpans(view.state.doc.lineAt(pos)).find((s) => s.from <= pos && s.to >= pos);
       let rtl = bidi && bidi.dir == Direction.RTL ? -1 : 1;
       side = lastMove.x < posCoords.left ? -rtl : rtl;
     }
-    let open = this.source(view2, pos, side);
+    let open = this.source(view, pos, side);
     if (open === null || open === void 0 ? void 0 : open.then) {
       let pending = this.pending = { pos };
       open.then((result) => {
         if (this.pending == pending) {
           this.pending = null;
           if (result && !(Array.isArray(result) && !result.length))
-            view2.dispatch({ effects: this.setHover.of(Array.isArray(result) ? result : [result]) });
+            view.dispatch({ effects: this.setHover.of(Array.isArray(result) ? result : [result]) });
         }
-      }, (e) => logException(view2.state, e, "hover tooltip"));
+      }, (e) => logException(view.state, e, "hover tooltip"));
     } else if (open && !(Array.isArray(open) && !open.length)) {
-      view2.dispatch({ effects: this.setHover.of(Array.isArray(open) ? open : [open]) });
+      view.dispatch({ effects: this.setHover.of(Array.isArray(open) ? open : [open]) });
     }
   }
   get tooltip() {
@@ -13039,12 +13039,12 @@ function isInTooltip(tooltip, event) {
   }
   return event.clientX >= left - tooltipMargin && event.clientX <= right + tooltipMargin && event.clientY >= top2 - tooltipMargin && event.clientY <= bottom + tooltipMargin;
 }
-function isOverRange(view2, from, to, x, y, margin) {
-  let rect = view2.scrollDOM.getBoundingClientRect();
-  let docBottom = view2.documentTop + view2.documentPadding.top + view2.contentHeight;
+function isOverRange(view, from, to, x, y, margin) {
+  let rect = view.scrollDOM.getBoundingClientRect();
+  let docBottom = view.documentTop + view.documentPadding.top + view.contentHeight;
   if (rect.left > x || rect.right < x || rect.top > y || Math.min(rect.bottom, docBottom) < y)
     return false;
-  let pos = view2.posAtCoords({ x, y }, false);
+  let pos = view.posAtCoords({ x, y }, false);
   return pos >= from && pos <= to;
 }
 function hoverTooltip(source, options = {}) {
@@ -13088,8 +13088,8 @@ function hoverTooltip(source, options = {}) {
     active: hoverState,
     extension: [
       hoverState,
-      ViewPlugin.define((view2) => new HoverPlugin(
-        view2,
+      ViewPlugin.define((view) => new HoverPlugin(
+        view,
         source,
         hoverState,
         setHover,
@@ -13100,8 +13100,8 @@ function hoverTooltip(source, options = {}) {
     ]
   };
 }
-function getTooltip(view2, tooltip) {
-  let plugin = view2.plugin(tooltipPlugin);
+function getTooltip(view, tooltip) {
+  let plugin = view.plugin(tooltipPlugin);
   if (!plugin)
     return null;
   let found = plugin.manager.tooltips.indexOf(tooltip);
@@ -13118,19 +13118,19 @@ var panelConfig = /* @__PURE__ */ Facet.define({
     return { topContainer, bottomContainer };
   }
 });
-function getPanel(view2, panel) {
-  let plugin = view2.plugin(panelPlugin);
+function getPanel(view, panel) {
+  let plugin = view.plugin(panelPlugin);
   let index = plugin ? plugin.specs.indexOf(panel) : -1;
   return index > -1 ? plugin.panels[index] : null;
 }
 var panelPlugin = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.input = view2.state.facet(showPanel);
+  constructor(view) {
+    this.input = view.state.facet(showPanel);
     this.specs = this.input.filter((s) => s);
-    this.panels = this.specs.map((spec) => spec(view2));
-    let conf = view2.state.facet(panelConfig);
-    this.top = new PanelGroup(view2, true, conf.topContainer);
-    this.bottom = new PanelGroup(view2, false, conf.bottomContainer);
+    this.panels = this.specs.map((spec) => spec(view));
+    let conf = view.state.facet(panelConfig);
+    this.top = new PanelGroup(view, true, conf.topContainer);
+    this.bottom = new PanelGroup(view, false, conf.bottomContainer);
     this.top.sync(this.panels.filter((p) => p.top));
     this.bottom.sync(this.panels.filter((p) => !p.top));
     for (let p of this.panels) {
@@ -13188,14 +13188,14 @@ var panelPlugin = /* @__PURE__ */ ViewPlugin.fromClass(class {
     this.bottom.sync([]);
   }
 }, {
-  provide: (plugin) => EditorView.scrollMargins.of((view2) => {
-    let value = view2.plugin(plugin);
+  provide: (plugin) => EditorView.scrollMargins.of((view) => {
+    let value = view.plugin(plugin);
     return value && { top: value.top.scrollMargin(), bottom: value.bottom.scrollMargin() };
   })
 });
 var PanelGroup = class {
-  constructor(view2, top2, container) {
-    this.view = view2;
+  constructor(view, top2, container) {
+    this.view = view;
     this.top = top2;
     this.container = container;
     this.dom = void 0;
@@ -13316,16 +13316,16 @@ function gutters(config2) {
   return result;
 }
 var gutterView = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.domAfter = null;
-    this.prevViewport = view2.viewport;
+    this.prevViewport = view.viewport;
     this.dom = document.createElement("div");
     this.dom.className = "cm-gutters cm-gutters-before";
     this.dom.setAttribute("aria-hidden", "true");
     this.dom.style.minHeight = this.view.contentHeight / this.view.scaleY + "px";
-    this.gutters = view2.state.facet(activeGutters).map((conf) => new SingleGutterView(view2, conf));
-    this.fixed = !view2.state.facet(unfixGutters);
+    this.gutters = view.state.facet(activeGutters).map((conf) => new SingleGutterView(view, conf));
+    this.fixed = !view.state.facet(unfixGutters);
     for (let gutter2 of this.gutters) {
       if (gutter2.config.side == "after")
         this.getDOMAfter().appendChild(gutter2.dom);
@@ -13336,7 +13336,7 @@ var gutterView = /* @__PURE__ */ ViewPlugin.fromClass(class {
       this.dom.style.position = "sticky";
     }
     this.syncGutters(false);
-    view2.scrollDOM.insertBefore(this.dom, view2.contentDOM);
+    view.scrollDOM.insertBefore(this.dom, view.contentDOM);
   }
   getDOMAfter() {
     if (!this.domAfter) {
@@ -13447,19 +13447,19 @@ var gutterView = /* @__PURE__ */ ViewPlugin.fromClass(class {
     return change;
   }
   destroy() {
-    for (let view2 of this.gutters)
-      view2.destroy();
+    for (let view of this.gutters)
+      view.destroy();
     this.dom.remove();
     if (this.domAfter)
       this.domAfter.remove();
   }
 }, {
-  provide: (plugin) => EditorView.scrollMargins.of((view2) => {
-    let value = view2.plugin(plugin);
+  provide: (plugin) => EditorView.scrollMargins.of((view) => {
+    let value = view.plugin(plugin);
     if (!value || value.gutters.length == 0 || !value.fixed)
       return null;
-    let before = value.dom.offsetWidth * view2.scaleX, after = value.domAfter ? value.domAfter.offsetWidth * view2.scaleX : 0;
-    return view2.textDirection == Direction.LTR ? { left: before, right: after } : { right: before, left: after };
+    let before = value.dom.offsetWidth * view.scaleX, after = value.domAfter ? value.domAfter.offsetWidth * view.scaleX : 0;
+    return view.textDirection == Direction.LTR ? { left: before, right: after } : { right: before, left: after };
   })
 });
 function asArray2(val) {
@@ -13479,40 +13479,40 @@ var UpdateContext = class {
     this.i = 0;
     this.cursor = RangeSet.iter(gutter2.markers, viewport.from);
   }
-  addElement(view2, block, markers) {
-    let { gutter: gutter2 } = this, above = (block.top - this.height) / view2.scaleY, height = block.height / view2.scaleY;
+  addElement(view, block, markers) {
+    let { gutter: gutter2 } = this, above = (block.top - this.height) / view.scaleY, height = block.height / view.scaleY;
     if (this.i == gutter2.elements.length) {
-      let newElt = new GutterElement(view2, height, above, markers);
+      let newElt = new GutterElement(view, height, above, markers);
       gutter2.elements.push(newElt);
       gutter2.dom.appendChild(newElt.dom);
     } else {
-      gutter2.elements[this.i].update(view2, height, above, markers);
+      gutter2.elements[this.i].update(view, height, above, markers);
     }
     this.height = block.bottom;
     this.i++;
   }
-  line(view2, line, extraMarkers) {
+  line(view, line, extraMarkers) {
     let localMarkers = [];
     advanceCursor(this.cursor, localMarkers, line.from);
     if (extraMarkers.length)
       localMarkers = localMarkers.concat(extraMarkers);
-    let forLine = this.gutter.config.lineMarker(view2, line, localMarkers);
+    let forLine = this.gutter.config.lineMarker(view, line, localMarkers);
     if (forLine)
       localMarkers.unshift(forLine);
     let gutter2 = this.gutter;
     if (localMarkers.length == 0 && !gutter2.config.renderEmptyElements)
       return;
-    this.addElement(view2, line, localMarkers);
+    this.addElement(view, line, localMarkers);
   }
-  widget(view2, block) {
-    let marker = this.gutter.config.widgetMarker(view2, block.widget, block), markers = marker ? [marker] : null;
-    for (let cls of view2.state.facet(gutterWidgetClass)) {
-      let marker2 = cls(view2, block.widget, block);
+  widget(view, block) {
+    let marker = this.gutter.config.widgetMarker(view, block.widget, block), markers = marker ? [marker] : null;
+    for (let cls of view.state.facet(gutterWidgetClass)) {
+      let marker2 = cls(view, block.widget, block);
       if (marker2)
         (markers || (markers = [])).push(marker2);
     }
     if (markers)
-      this.addElement(view2, block, markers);
+      this.addElement(view, block, markers);
   }
   finish() {
     let gutter2 = this.gutter;
@@ -13524,8 +13524,8 @@ var UpdateContext = class {
   }
 };
 var SingleGutterView = class {
-  constructor(view2, config2) {
-    this.view = view2;
+  constructor(view, config2) {
+    this.view = view;
     this.config = config2;
     this.elements = [];
     this.spacer = null;
@@ -13542,14 +13542,14 @@ var SingleGutterView = class {
         } else {
           y = event.clientY;
         }
-        let line = view2.lineBlockAtHeight(y - view2.documentTop);
-        if (config2.domEventHandlers[prop](view2, line, event))
+        let line = view.lineBlockAtHeight(y - view.documentTop);
+        if (config2.domEventHandlers[prop](view, line, event))
           event.preventDefault();
       });
     }
-    this.markers = asArray2(config2.markers(view2));
+    this.markers = asArray2(config2.markers(view));
     if (config2.initialSpacer) {
-      this.spacer = new GutterElement(view2, 0, 0, [config2.initialSpacer(view2)]);
+      this.spacer = new GutterElement(view, 0, 0, [config2.initialSpacer(view)]);
       this.dom.appendChild(this.spacer.dom);
       this.spacer.dom.style.cssText += "visibility: hidden; pointer-events: none";
     }
@@ -13571,15 +13571,15 @@ var SingleGutterView = class {
   }
 };
 var GutterElement = class {
-  constructor(view2, height, above, markers) {
+  constructor(view, height, above, markers) {
     this.height = -1;
     this.above = 0;
     this.markers = [];
     this.dom = document.createElement("div");
     this.dom.className = "cm-gutterElement";
-    this.update(view2, height, above, markers);
+    this.update(view, height, above, markers);
   }
-  update(view2, height, above, markers) {
+  update(view, height, above, markers) {
     if (this.height != height) {
       this.height = height;
       this.dom.style.height = height + "px";
@@ -13587,9 +13587,9 @@ var GutterElement = class {
     if (this.above != above)
       this.dom.style.marginTop = (this.above = above) ? above + "px" : "";
     if (!sameMarkers(this.markers, markers))
-      this.setMarkers(view2, markers);
+      this.setMarkers(view, markers);
   }
-  setMarkers(view2, markers) {
+  setMarkers(view, markers) {
     let cls = "cm-gutterElement", domPos = this.dom.firstChild;
     for (let iNew = 0, iOld = 0; ; ) {
       let skipTo = iOld, marker = iNew < markers.length ? markers[iNew++] : null, matched = false;
@@ -13621,7 +13621,7 @@ var GutterElement = class {
         if (matched)
           domPos = domPos.nextSibling;
         else
-          this.dom.insertBefore(marker.toDOM(view2), domPos);
+          this.dom.insertBefore(marker.toDOM(view), domPos);
       }
       if (matched)
         iOld++;
@@ -13650,7 +13650,7 @@ var lineNumberConfig = /* @__PURE__ */ Facet.define({
         let result = Object.assign({}, a);
         for (let event in b) {
           let exists = result[event], add2 = b[event];
-          result[event] = exists ? (view2, line, event2) => exists(view2, line, event2) || add2(view2, line, event2) : add2;
+          result[event] = exists ? (view, line, event2) => exists(view, line, event2) || add2(view, line, event2) : add2;
         }
         return result;
       }
@@ -13669,31 +13669,31 @@ var NumberMarker = class extends GutterMarker {
     return document.createTextNode(this.number);
   }
 };
-function formatNumber(view2, number2) {
-  return view2.state.facet(lineNumberConfig).formatNumber(number2, view2.state);
+function formatNumber(view, number2) {
+  return view.state.facet(lineNumberConfig).formatNumber(number2, view.state);
 }
 var lineNumberGutter = /* @__PURE__ */ activeGutters.compute([lineNumberConfig], (state) => ({
   class: "cm-lineNumbers",
   renderEmptyElements: false,
-  markers(view2) {
-    return view2.state.facet(lineNumberMarkers);
+  markers(view) {
+    return view.state.facet(lineNumberMarkers);
   },
-  lineMarker(view2, line, others) {
+  lineMarker(view, line, others) {
     if (others.some((m) => m.toDOM))
       return null;
-    return new NumberMarker(formatNumber(view2, view2.state.doc.lineAt(line.from).number));
+    return new NumberMarker(formatNumber(view, view.state.doc.lineAt(line.from).number));
   },
-  widgetMarker: (view2, widget, block) => {
-    for (let m of view2.state.facet(lineNumberWidgetMarker)) {
-      let result = m(view2, widget, block);
+  widgetMarker: (view, widget, block) => {
+    for (let m of view.state.facet(lineNumberWidgetMarker)) {
+      let result = m(view, widget, block);
       if (result)
         return result;
     }
     return null;
   },
   lineMarkerChange: (update) => update.startState.facet(lineNumberConfig) != update.state.facet(lineNumberConfig),
-  initialSpacer(view2) {
-    return new NumberMarker(formatNumber(view2, maxLineNumber(view2.state.doc.lines)));
+  initialSpacer(view) {
+    return new NumberMarker(formatNumber(view, maxLineNumber(view.state.doc.lines)));
   },
   updateSpacer(spacer, update) {
     let max = formatNumber(update.view, maxLineNumber(update.view.state.doc.lines));
@@ -16531,8 +16531,8 @@ if (typeof requestIdleCallback != "undefined")
   };
 var isInputPending = typeof navigator != "undefined" && ((_a = navigator.scheduling) === null || _a === void 0 ? void 0 : _a.isInputPending) ? () => navigator.scheduling.isInputPending() : null;
 var parseWorker = /* @__PURE__ */ ViewPlugin.fromClass(class ParseWorker {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.working = null;
     this.workScheduled = 0;
     this.chunkEnd = -1;
@@ -16961,12 +16961,12 @@ function mapRange(range, mapping) {
 }
 var foldEffect = /* @__PURE__ */ StateEffect.define({ map: mapRange });
 var unfoldEffect = /* @__PURE__ */ StateEffect.define({ map: mapRange });
-function selectedLines(view2) {
+function selectedLines(view) {
   let lines = [];
-  for (let { head } of view2.state.selection.ranges) {
+  for (let { head } of view.state.selection.ranges) {
     if (lines.some((l) => l.from <= head && l.to >= head))
       continue;
-    lines.push(view2.lineBlockAt(head));
+    lines.push(view.lineBlockAt(head));
   }
   return lines;
 }
@@ -17048,54 +17048,54 @@ function foldExists(folded, from, to) {
 function maybeEnable(state, other) {
   return state.field(foldState, false) ? other : other.concat(StateEffect.appendConfig.of(codeFolding()));
 }
-var foldCode = (view2) => {
-  for (let line of selectedLines(view2)) {
-    let range = foldable(view2.state, line.from, line.to);
+var foldCode = (view) => {
+  for (let line of selectedLines(view)) {
+    let range = foldable(view.state, line.from, line.to);
     if (range) {
-      view2.dispatch({ effects: maybeEnable(view2.state, [foldEffect.of(range), announceFold(view2, range)]) });
+      view.dispatch({ effects: maybeEnable(view.state, [foldEffect.of(range), announceFold(view, range)]) });
       return true;
     }
   }
   return false;
 };
-var unfoldCode = (view2) => {
-  if (!view2.state.field(foldState, false))
+var unfoldCode = (view) => {
+  if (!view.state.field(foldState, false))
     return false;
   let effects = [];
-  for (let line of selectedLines(view2)) {
-    let folded = findFold(view2.state, line.from, line.to);
+  for (let line of selectedLines(view)) {
+    let folded = findFold(view.state, line.from, line.to);
     if (folded)
-      effects.push(unfoldEffect.of(folded), announceFold(view2, folded, false));
+      effects.push(unfoldEffect.of(folded), announceFold(view, folded, false));
   }
   if (effects.length)
-    view2.dispatch({ effects });
+    view.dispatch({ effects });
   return effects.length > 0;
 };
-function announceFold(view2, range, fold = true) {
-  let lineFrom = view2.state.doc.lineAt(range.from).number, lineTo = view2.state.doc.lineAt(range.to).number;
-  return EditorView.announce.of(`${view2.state.phrase(fold ? "Folded lines" : "Unfolded lines")} ${lineFrom} ${view2.state.phrase("to")} ${lineTo}.`);
+function announceFold(view, range, fold = true) {
+  let lineFrom = view.state.doc.lineAt(range.from).number, lineTo = view.state.doc.lineAt(range.to).number;
+  return EditorView.announce.of(`${view.state.phrase(fold ? "Folded lines" : "Unfolded lines")} ${lineFrom} ${view.state.phrase("to")} ${lineTo}.`);
 }
-var foldAll = (view2) => {
-  let { state } = view2, effects = [];
+var foldAll = (view) => {
+  let { state } = view, effects = [];
   for (let pos = 0; pos < state.doc.length; ) {
-    let line = view2.lineBlockAt(pos), range = foldable(state, line.from, line.to);
+    let line = view.lineBlockAt(pos), range = foldable(state, line.from, line.to);
     if (range)
       effects.push(foldEffect.of(range));
-    pos = (range ? view2.lineBlockAt(range.to) : line).to + 1;
+    pos = (range ? view.lineBlockAt(range.to) : line).to + 1;
   }
   if (effects.length)
-    view2.dispatch({ effects: maybeEnable(view2.state, effects) });
+    view.dispatch({ effects: maybeEnable(view.state, effects) });
   return !!effects.length;
 };
-var unfoldAll = (view2) => {
-  let field = view2.state.field(foldState, false);
+var unfoldAll = (view) => {
+  let field = view.state.field(foldState, false);
   if (!field || !field.size)
     return false;
   let effects = [];
-  field.between(0, view2.state.doc.length, (from, to) => {
+  field.between(0, view.state.doc.length, (from, to) => {
     effects.push(unfoldEffect.of({ from, to }));
   });
-  view2.dispatch({ effects });
+  view.dispatch({ effects });
   return true;
 };
 var foldKeymap = [
@@ -17120,17 +17120,17 @@ function codeFolding(config2) {
     result.push(foldConfig.of(config2));
   return result;
 }
-function widgetToDOM(view2, prepared) {
-  let { state } = view2, conf = state.facet(foldConfig);
+function widgetToDOM(view, prepared) {
+  let { state } = view, conf = state.facet(foldConfig);
   let onclick = (event) => {
-    let line = view2.lineBlockAt(view2.posAtDOM(event.target));
-    let folded = findFold(view2.state, line.from, line.to);
+    let line = view.lineBlockAt(view.posAtDOM(event.target));
+    let folded = findFold(view.state, line.from, line.to);
     if (folded)
-      view2.dispatch({ effects: unfoldEffect.of(folded) });
+      view.dispatch({ effects: unfoldEffect.of(folded) });
     event.preventDefault();
   };
   if (conf.placeholderDOM)
-    return conf.placeholderDOM(view2, onclick, prepared);
+    return conf.placeholderDOM(view, onclick, prepared);
   let element = document.createElement("span");
   element.textContent = conf.placeholderText;
   element.setAttribute("aria-label", state.phrase("folded code"));
@@ -17140,8 +17140,8 @@ function widgetToDOM(view2, prepared) {
   return element;
 }
 var foldWidget = /* @__PURE__ */ Decoration.replace({ widget: /* @__PURE__ */ new class extends WidgetType {
-  toDOM(view2) {
-    return widgetToDOM(view2, null);
+  toDOM(view) {
+    return widgetToDOM(view, null);
   }
 }() });
 var PreparedFoldWidget = class extends WidgetType {
@@ -17152,8 +17152,8 @@ var PreparedFoldWidget = class extends WidgetType {
   eq(other) {
     return this.value == other.value;
   }
-  toDOM(view2) {
-    return widgetToDOM(view2, this.value);
+  toDOM(view) {
+    return widgetToDOM(view, this.value);
   }
 };
 var foldGutterDefaults = {
@@ -17172,12 +17172,12 @@ var FoldMarker = class extends GutterMarker {
   eq(other) {
     return this.config == other.config && this.open == other.open;
   }
-  toDOM(view2) {
+  toDOM(view) {
     if (this.config.markerDOM)
       return this.config.markerDOM(this.open);
     let span = document.createElement("span");
     span.textContent = this.open ? this.config.openText : this.config.closedText;
-    span.title = view2.state.phrase(this.open ? "Fold line" : "Unfold line");
+    span.title = view.state.phrase(this.open ? "Fold line" : "Unfold line");
     return span;
   }
 };
@@ -17185,18 +17185,18 @@ function foldGutter(config2 = {}) {
   let fullConfig = { ...foldGutterDefaults, ...config2 };
   let canFold = new FoldMarker(fullConfig, true), canUnfold = new FoldMarker(fullConfig, false);
   let markers = ViewPlugin.fromClass(class {
-    constructor(view2) {
-      this.from = view2.viewport.from;
-      this.markers = this.buildMarkers(view2);
+    constructor(view) {
+      this.from = view.viewport.from;
+      this.markers = this.buildMarkers(view);
     }
     update(update) {
       if (update.docChanged || update.viewportChanged || update.startState.facet(language) != update.state.facet(language) || update.startState.field(foldState, false) != update.state.field(foldState, false) || syntaxTree(update.startState) != syntaxTree(update.state) || fullConfig.foldingChanged(update))
         this.markers = this.buildMarkers(update.view);
     }
-    buildMarkers(view2) {
+    buildMarkers(view) {
       let builder = new RangeSetBuilder();
-      for (let line of view2.viewportLineBlocks) {
-        let mark = findFold(view2.state, line.from, line.to) ? canUnfold : foldable(view2.state, line.from, line.to) ? canFold : null;
+      for (let line of view.viewportLineBlocks) {
+        let mark = findFold(view.state, line.from, line.to) ? canUnfold : foldable(view.state, line.from, line.to) ? canFold : null;
         if (mark)
           builder.add(line.from, line.from, mark);
       }
@@ -17208,26 +17208,26 @@ function foldGutter(config2 = {}) {
     markers,
     gutter({
       class: "cm-foldGutter",
-      markers(view2) {
+      markers(view) {
         var _a2;
-        return ((_a2 = view2.plugin(markers)) === null || _a2 === void 0 ? void 0 : _a2.markers) || RangeSet.empty;
+        return ((_a2 = view.plugin(markers)) === null || _a2 === void 0 ? void 0 : _a2.markers) || RangeSet.empty;
       },
       initialSpacer() {
         return new FoldMarker(fullConfig, false);
       },
       domEventHandlers: {
         ...domEventHandlers,
-        click: (view2, line, event) => {
-          if (domEventHandlers.click && domEventHandlers.click(view2, line, event))
+        click: (view, line, event) => {
+          if (domEventHandlers.click && domEventHandlers.click(view, line, event))
             return true;
-          let folded = findFold(view2.state, line.from, line.to);
+          let folded = findFold(view.state, line.from, line.to);
           if (folded) {
-            view2.dispatch({ effects: unfoldEffect.of(folded) });
+            view.dispatch({ effects: unfoldEffect.of(folded) });
             return true;
           }
-          let range = foldable(view2.state, line.from, line.to);
+          let range = foldable(view.state, line.from, line.to);
           if (range) {
-            view2.dispatch({ effects: foldEffect.of(range) });
+            view.dispatch({ effects: foldEffect.of(range) });
             return true;
           }
           return false;
@@ -17320,11 +17320,11 @@ function syntaxHighlighting(highlighter, options) {
   return ext;
 }
 var TreeHighlighter = class {
-  constructor(view2) {
+  constructor(view) {
     this.markCache = /* @__PURE__ */ Object.create(null);
-    this.tree = syntaxTree(view2.state);
-    this.decorations = this.buildDeco(view2, getHighlighters(view2.state));
-    this.decoratedTo = view2.viewport.to;
+    this.tree = syntaxTree(view.state);
+    this.decorations = this.buildDeco(view, getHighlighters(view.state));
+    this.decoratedTo = view.viewport.to;
   }
   update(update) {
     let tree = syntaxTree(update.state), highlighters = getHighlighters(update.state);
@@ -17339,11 +17339,11 @@ var TreeHighlighter = class {
       this.decoratedTo = viewport.to;
     }
   }
-  buildDeco(view2, highlighters) {
+  buildDeco(view, highlighters) {
     if (!highlighters || !this.tree.length)
       return Decoration.none;
     let builder = new RangeSetBuilder();
-    for (let { from, to } of view2.visibleRanges) {
+    for (let { from, to } of view.visibleRanges) {
       highlightTree(this.tree, highlighters, (from2, to2, style) => {
         builder.add(from2, to2, this.markCache[style] || (this.markCache[style] = Decoration.mark({ class: style })));
       }, from, to);
@@ -17854,12 +17854,12 @@ function history(config2 = {}) {
     historyField_,
     historyConfig.of(config2),
     EditorView.domEventHandlers({
-      beforeinput(e, view2) {
+      beforeinput(e, view) {
         let command2 = e.inputType == "historyUndo" ? undo : e.inputType == "historyRedo" ? redo : null;
         if (!command2)
           return false;
         e.preventDefault();
-        return command2(view2);
+        return command2(view);
       }
     })
   ];
@@ -18077,19 +18077,19 @@ function moveSel({ state, dispatch }, how) {
 function rangeEnd(range, forward) {
   return EditorSelection.cursor(forward ? range.to : range.from);
 }
-function cursorByChar(view2, forward) {
-  return moveSel(view2, (range) => range.empty ? view2.moveByChar(range, forward) : rangeEnd(range, forward));
+function cursorByChar(view, forward) {
+  return moveSel(view, (range) => range.empty ? view.moveByChar(range, forward) : rangeEnd(range, forward));
 }
-function ltrAtCursor(view2) {
-  return view2.textDirectionAt(view2.state.selection.main.head) == Direction.LTR;
+function ltrAtCursor(view) {
+  return view.textDirectionAt(view.state.selection.main.head) == Direction.LTR;
 }
-var cursorCharLeft = (view2) => cursorByChar(view2, !ltrAtCursor(view2));
-var cursorCharRight = (view2) => cursorByChar(view2, ltrAtCursor(view2));
-function cursorByGroup(view2, forward) {
-  return moveSel(view2, (range) => range.empty ? view2.moveByGroup(range, forward) : rangeEnd(range, forward));
+var cursorCharLeft = (view) => cursorByChar(view, !ltrAtCursor(view));
+var cursorCharRight = (view) => cursorByChar(view, ltrAtCursor(view));
+function cursorByGroup(view, forward) {
+  return moveSel(view, (range) => range.empty ? view.moveByGroup(range, forward) : rangeEnd(range, forward));
 }
-var cursorGroupLeft = (view2) => cursorByGroup(view2, !ltrAtCursor(view2));
-var cursorGroupRight = (view2) => cursorByGroup(view2, ltrAtCursor(view2));
+var cursorGroupLeft = (view) => cursorByGroup(view, !ltrAtCursor(view));
+var cursorGroupRight = (view) => cursorByGroup(view, ltrAtCursor(view));
 var segmenter = typeof Intl != "undefined" && Intl.Segmenter ? /* @__PURE__ */ new Intl.Segmenter(void 0, { granularity: "word" }) : null;
 function interestingNode(state, node, bracketProp) {
   if (node.type.prop(bracketProp))
@@ -18116,77 +18116,77 @@ function moveBySyntax(state, start, forward) {
     newPos = forward ? pos.to : pos.from;
   return EditorSelection.cursor(newPos, forward ? -1 : 1);
 }
-var cursorSyntaxLeft = (view2) => moveSel(view2, (range) => moveBySyntax(view2.state, range, !ltrAtCursor(view2)));
-var cursorSyntaxRight = (view2) => moveSel(view2, (range) => moveBySyntax(view2.state, range, ltrAtCursor(view2)));
-function cursorByLine(view2, forward) {
-  return moveSel(view2, (range) => {
+var cursorSyntaxLeft = (view) => moveSel(view, (range) => moveBySyntax(view.state, range, !ltrAtCursor(view)));
+var cursorSyntaxRight = (view) => moveSel(view, (range) => moveBySyntax(view.state, range, ltrAtCursor(view)));
+function cursorByLine(view, forward) {
+  return moveSel(view, (range) => {
     if (!range.empty)
       return rangeEnd(range, forward);
-    let moved = view2.moveVertically(range, forward);
-    return moved.head != range.head ? moved : view2.moveToLineBoundary(range, forward);
+    let moved = view.moveVertically(range, forward);
+    return moved.head != range.head ? moved : view.moveToLineBoundary(range, forward);
   });
 }
-var cursorLineUp = (view2) => cursorByLine(view2, false);
-var cursorLineDown = (view2) => cursorByLine(view2, true);
-function pageInfo(view2) {
-  let selfScroll = view2.scrollDOM.clientHeight < view2.scrollDOM.scrollHeight - 2;
+var cursorLineUp = (view) => cursorByLine(view, false);
+var cursorLineDown = (view) => cursorByLine(view, true);
+function pageInfo(view) {
+  let selfScroll = view.scrollDOM.clientHeight < view.scrollDOM.scrollHeight - 2;
   let marginTop = 0, marginBottom = 0, height;
   if (selfScroll) {
-    for (let source of view2.state.facet(EditorView.scrollMargins)) {
-      let margins = source(view2);
+    for (let source of view.state.facet(EditorView.scrollMargins)) {
+      let margins = source(view);
       if (margins === null || margins === void 0 ? void 0 : margins.top)
         marginTop = Math.max(margins === null || margins === void 0 ? void 0 : margins.top, marginTop);
       if (margins === null || margins === void 0 ? void 0 : margins.bottom)
         marginBottom = Math.max(margins === null || margins === void 0 ? void 0 : margins.bottom, marginBottom);
     }
-    height = view2.scrollDOM.clientHeight - marginTop - marginBottom;
+    height = view.scrollDOM.clientHeight - marginTop - marginBottom;
   } else {
-    height = (view2.dom.ownerDocument.defaultView || window).innerHeight;
+    height = (view.dom.ownerDocument.defaultView || window).innerHeight;
   }
   return {
     marginTop,
     marginBottom,
     selfScroll,
-    height: Math.max(view2.defaultLineHeight, height - 5)
+    height: Math.max(view.defaultLineHeight, height - 5)
   };
 }
-function cursorByPage(view2, forward) {
-  let page = pageInfo(view2);
-  let { state } = view2, selection2 = updateSel(state.selection, (range) => {
-    return range.empty ? view2.moveVertically(range, forward, page.height) : rangeEnd(range, forward);
+function cursorByPage(view, forward) {
+  let page = pageInfo(view);
+  let { state } = view, selection2 = updateSel(state.selection, (range) => {
+    return range.empty ? view.moveVertically(range, forward, page.height) : rangeEnd(range, forward);
   });
   if (selection2.eq(state.selection))
     return false;
   let effect;
   if (page.selfScroll) {
-    let startPos = view2.coordsAtPos(state.selection.main.head);
-    let scrollRect = view2.scrollDOM.getBoundingClientRect();
+    let startPos = view.coordsAtPos(state.selection.main.head);
+    let scrollRect = view.scrollDOM.getBoundingClientRect();
     let scrollTop = scrollRect.top + page.marginTop, scrollBottom = scrollRect.bottom - page.marginBottom;
     if (startPos && startPos.top > scrollTop && startPos.bottom < scrollBottom)
       effect = EditorView.scrollIntoView(selection2.main.head, { y: "start", yMargin: startPos.top - scrollTop });
   }
-  view2.dispatch(setSel(state, selection2), { effects: effect });
+  view.dispatch(setSel(state, selection2), { effects: effect });
   return true;
 }
-var cursorPageUp = (view2) => cursorByPage(view2, false);
-var cursorPageDown = (view2) => cursorByPage(view2, true);
-function moveByLineBoundary(view2, start, forward) {
-  let line = view2.lineBlockAt(start.head), moved = view2.moveToLineBoundary(start, forward);
+var cursorPageUp = (view) => cursorByPage(view, false);
+var cursorPageDown = (view) => cursorByPage(view, true);
+function moveByLineBoundary(view, start, forward) {
+  let line = view.lineBlockAt(start.head), moved = view.moveToLineBoundary(start, forward);
   if (moved.head == start.head && moved.head != (forward ? line.to : line.from))
-    moved = view2.moveToLineBoundary(start, forward, false);
+    moved = view.moveToLineBoundary(start, forward, false);
   if (!forward && moved.head == line.from && line.length) {
-    let space2 = /^\s*/.exec(view2.state.sliceDoc(line.from, Math.min(line.from + 100, line.to)))[0].length;
+    let space2 = /^\s*/.exec(view.state.sliceDoc(line.from, Math.min(line.from + 100, line.to)))[0].length;
     if (space2 && start.head != line.from + space2)
       moved = EditorSelection.cursor(line.from + space2);
   }
   return moved;
 }
-var cursorLineBoundaryForward = (view2) => moveSel(view2, (range) => moveByLineBoundary(view2, range, true));
-var cursorLineBoundaryBackward = (view2) => moveSel(view2, (range) => moveByLineBoundary(view2, range, false));
-var cursorLineBoundaryLeft = (view2) => moveSel(view2, (range) => moveByLineBoundary(view2, range, !ltrAtCursor(view2)));
-var cursorLineBoundaryRight = (view2) => moveSel(view2, (range) => moveByLineBoundary(view2, range, ltrAtCursor(view2)));
-var cursorLineStart = (view2) => moveSel(view2, (range) => EditorSelection.cursor(view2.lineBlockAt(range.head).from, 1));
-var cursorLineEnd = (view2) => moveSel(view2, (range) => EditorSelection.cursor(view2.lineBlockAt(range.head).to, -1));
+var cursorLineBoundaryForward = (view) => moveSel(view, (range) => moveByLineBoundary(view, range, true));
+var cursorLineBoundaryBackward = (view) => moveSel(view, (range) => moveByLineBoundary(view, range, false));
+var cursorLineBoundaryLeft = (view) => moveSel(view, (range) => moveByLineBoundary(view, range, !ltrAtCursor(view)));
+var cursorLineBoundaryRight = (view) => moveSel(view, (range) => moveByLineBoundary(view, range, ltrAtCursor(view)));
+var cursorLineStart = (view) => moveSel(view, (range) => EditorSelection.cursor(view.lineBlockAt(range.head).from, 1));
+var cursorLineEnd = (view) => moveSel(view, (range) => EditorSelection.cursor(view.lineBlockAt(range.head).to, -1));
 function toMatchingBracket(state, dispatch, extend) {
   let found = false, selection2 = updateSel(state.selection, (range) => {
     let matching = matchBrackets(state, range.head, -1) || matchBrackets(state, range.head, 1) || range.head > 0 && matchBrackets(state, range.head - 1, 1) || range.head < state.doc.length && matchBrackets(state, range.head + 1, -1);
@@ -18212,34 +18212,34 @@ function extendSel(target, how) {
   target.dispatch(setSel(target.state, selection2));
   return true;
 }
-function selectByChar(view2, forward) {
-  return extendSel(view2, (range) => view2.moveByChar(range, forward));
+function selectByChar(view, forward) {
+  return extendSel(view, (range) => view.moveByChar(range, forward));
 }
-var selectCharLeft = (view2) => selectByChar(view2, !ltrAtCursor(view2));
-var selectCharRight = (view2) => selectByChar(view2, ltrAtCursor(view2));
-function selectByGroup(view2, forward) {
-  return extendSel(view2, (range) => view2.moveByGroup(range, forward));
+var selectCharLeft = (view) => selectByChar(view, !ltrAtCursor(view));
+var selectCharRight = (view) => selectByChar(view, ltrAtCursor(view));
+function selectByGroup(view, forward) {
+  return extendSel(view, (range) => view.moveByGroup(range, forward));
 }
-var selectGroupLeft = (view2) => selectByGroup(view2, !ltrAtCursor(view2));
-var selectGroupRight = (view2) => selectByGroup(view2, ltrAtCursor(view2));
-var selectSyntaxLeft = (view2) => extendSel(view2, (range) => moveBySyntax(view2.state, range, !ltrAtCursor(view2)));
-var selectSyntaxRight = (view2) => extendSel(view2, (range) => moveBySyntax(view2.state, range, ltrAtCursor(view2)));
-function selectByLine(view2, forward) {
-  return extendSel(view2, (range) => view2.moveVertically(range, forward));
+var selectGroupLeft = (view) => selectByGroup(view, !ltrAtCursor(view));
+var selectGroupRight = (view) => selectByGroup(view, ltrAtCursor(view));
+var selectSyntaxLeft = (view) => extendSel(view, (range) => moveBySyntax(view.state, range, !ltrAtCursor(view)));
+var selectSyntaxRight = (view) => extendSel(view, (range) => moveBySyntax(view.state, range, ltrAtCursor(view)));
+function selectByLine(view, forward) {
+  return extendSel(view, (range) => view.moveVertically(range, forward));
 }
-var selectLineUp = (view2) => selectByLine(view2, false);
-var selectLineDown = (view2) => selectByLine(view2, true);
-function selectByPage(view2, forward) {
-  return extendSel(view2, (range) => view2.moveVertically(range, forward, pageInfo(view2).height));
+var selectLineUp = (view) => selectByLine(view, false);
+var selectLineDown = (view) => selectByLine(view, true);
+function selectByPage(view, forward) {
+  return extendSel(view, (range) => view.moveVertically(range, forward, pageInfo(view).height));
 }
-var selectPageUp = (view2) => selectByPage(view2, false);
-var selectPageDown = (view2) => selectByPage(view2, true);
-var selectLineBoundaryForward = (view2) => extendSel(view2, (range) => moveByLineBoundary(view2, range, true));
-var selectLineBoundaryBackward = (view2) => extendSel(view2, (range) => moveByLineBoundary(view2, range, false));
-var selectLineBoundaryLeft = (view2) => extendSel(view2, (range) => moveByLineBoundary(view2, range, !ltrAtCursor(view2)));
-var selectLineBoundaryRight = (view2) => extendSel(view2, (range) => moveByLineBoundary(view2, range, ltrAtCursor(view2)));
-var selectLineStart = (view2) => extendSel(view2, (range) => EditorSelection.cursor(view2.lineBlockAt(range.head).from));
-var selectLineEnd = (view2) => extendSel(view2, (range) => EditorSelection.cursor(view2.lineBlockAt(range.head).to));
+var selectPageUp = (view) => selectByPage(view, false);
+var selectPageDown = (view) => selectByPage(view, true);
+var selectLineBoundaryForward = (view) => extendSel(view, (range) => moveByLineBoundary(view, range, true));
+var selectLineBoundaryBackward = (view) => extendSel(view, (range) => moveByLineBoundary(view, range, false));
+var selectLineBoundaryLeft = (view) => extendSel(view, (range) => moveByLineBoundary(view, range, !ltrAtCursor(view)));
+var selectLineBoundaryRight = (view) => extendSel(view, (range) => moveByLineBoundary(view, range, ltrAtCursor(view)));
+var selectLineStart = (view) => extendSel(view, (range) => EditorSelection.cursor(view.lineBlockAt(range.head).from));
+var selectLineEnd = (view) => extendSel(view, (range) => EditorSelection.cursor(view.lineBlockAt(range.head).to));
 var cursorDocStart = ({ state, dispatch }) => {
   dispatch(setSel(state, { anchor: 0 }));
   return true;
@@ -18355,8 +18355,8 @@ var deleteByChar = (target, forward, byIndentUnit) => deleteBy(target, (range) =
   }
   return targetPos;
 });
-var deleteCharBackward = (view2) => deleteByChar(view2, false, true);
-var deleteCharForward = (view2) => deleteByChar(view2, true, false);
+var deleteCharBackward = (view) => deleteByChar(view, false, true);
+var deleteCharForward = (view) => deleteByChar(view, true, false);
 var deleteByGroup = (target, forward) => deleteBy(target, (range) => {
   let pos = range.head, { state } = target, line = state.doc.lineAt(pos);
   let categorize = state.charCategorizer(pos);
@@ -18379,17 +18379,17 @@ var deleteByGroup = (target, forward) => deleteBy(target, (range) => {
 });
 var deleteGroupBackward = (target) => deleteByGroup(target, false);
 var deleteGroupForward = (target) => deleteByGroup(target, true);
-var deleteToLineEnd = (view2) => deleteBy(view2, (range) => {
-  let lineEnd = view2.lineBlockAt(range.head).to;
-  return range.head < lineEnd ? lineEnd : Math.min(view2.state.doc.length, range.head + 1);
+var deleteToLineEnd = (view) => deleteBy(view, (range) => {
+  let lineEnd = view.lineBlockAt(range.head).to;
+  return range.head < lineEnd ? lineEnd : Math.min(view.state.doc.length, range.head + 1);
 });
-var deleteLineBoundaryBackward = (view2) => deleteBy(view2, (range) => {
-  let lineStart = view2.moveToLineBoundary(range, false).head;
+var deleteLineBoundaryBackward = (view) => deleteBy(view, (range) => {
+  let lineStart = view.moveToLineBoundary(range, false).head;
   return range.head > lineStart ? lineStart : Math.max(0, range.head - 1);
 });
-var deleteLineBoundaryForward = (view2) => deleteBy(view2, (range) => {
-  let lineStart = view2.moveToLineBoundary(range, true).head;
-  return range.head < lineStart ? lineStart : Math.min(view2.state.doc.length, range.head + 1);
+var deleteLineBoundaryForward = (view) => deleteBy(view, (range) => {
+  let lineStart = view.moveToLineBoundary(range, true).head;
+  return range.head < lineStart ? lineStart : Math.min(view.state.doc.length, range.head + 1);
 });
 var splitLine = ({ state, dispatch }) => {
   if (state.readOnly)
@@ -18485,10 +18485,10 @@ function copyLine(state, dispatch, forward) {
 }
 var copyLineUp = ({ state, dispatch }) => copyLine(state, dispatch, false);
 var copyLineDown = ({ state, dispatch }) => copyLine(state, dispatch, true);
-var deleteLine = (view2) => {
-  if (view2.state.readOnly)
+var deleteLine = (view) => {
+  if (view.state.readOnly)
     return false;
-  let { state } = view2, changes = state.changes(selectedLineBlocks(state).map(({ from, to }) => {
+  let { state } = view, changes = state.changes(selectedLineBlocks(state).map(({ from, to }) => {
     if (from > 0)
       from--;
     else if (to < state.doc.length)
@@ -18497,14 +18497,14 @@ var deleteLine = (view2) => {
   }));
   let selection2 = updateSel(state.selection, (range) => {
     let dist2 = void 0;
-    if (view2.lineWrapping) {
-      let block = view2.lineBlockAt(range.head), pos = view2.coordsAtPos(range.head, range.assoc || 1);
+    if (view.lineWrapping) {
+      let block = view.lineBlockAt(range.head), pos = view.coordsAtPos(range.head, range.assoc || 1);
       if (pos)
-        dist2 = block.bottom + view2.documentTop - pos.bottom + view2.defaultLineHeight / 2;
+        dist2 = block.bottom + view.documentTop - pos.bottom + view.defaultLineHeight / 2;
     }
-    return view2.moveVertically(range, true, dist2);
+    return view.moveVertically(range, true, dist2);
   }).map(changes);
-  view2.dispatch({ changes, selection: selection2, scrollIntoView: true, userEvent: "delete.line" });
+  view.dispatch({ changes, selection: selection2, scrollIntoView: true, userEvent: "delete.line" });
   return true;
 };
 function isBetweenBrackets(state, pos) {
@@ -18616,8 +18616,8 @@ var indentLess = ({ state, dispatch }) => {
   }), { userEvent: "delete.dedent" }));
   return true;
 };
-var toggleTabFocusMode = (view2) => {
-  view2.setTabFocusMode();
+var toggleTabFocusMode = (view) => {
+  view.setTabFocusMode();
   return true;
 };
 var emacsStyleKeymap = [
@@ -18957,16 +18957,16 @@ function toCharEnd(text, pos) {
     pos++;
   return pos;
 }
-function createLineDialog(view2) {
-  let line = String(view2.state.doc.lineAt(view2.state.selection.main.head).number);
+function createLineDialog(view) {
+  let line = String(view.state.doc.lineAt(view.state.selection.main.head).number);
   let input = crelt("input", { class: "cm-textfield", name: "line", value: line });
   let dom = crelt("form", {
     class: "cm-gotoLine",
     onkeydown: (event) => {
       if (event.keyCode == 27) {
         event.preventDefault();
-        view2.dispatch({ effects: dialogEffect.of(false) });
-        view2.focus();
+        view.dispatch({ effects: dialogEffect.of(false) });
+        view.focus();
       } else if (event.keyCode == 13) {
         event.preventDefault();
         go();
@@ -18976,20 +18976,20 @@ function createLineDialog(view2) {
       event.preventDefault();
       go();
     }
-  }, crelt("label", view2.state.phrase("Go to line"), ": ", input), " ", crelt("button", { class: "cm-button", type: "submit" }, view2.state.phrase("go")), crelt("button", {
+  }, crelt("label", view.state.phrase("Go to line"), ": ", input), " ", crelt("button", { class: "cm-button", type: "submit" }, view.state.phrase("go")), crelt("button", {
     name: "close",
     onclick: () => {
-      view2.dispatch({ effects: dialogEffect.of(false) });
-      view2.focus();
+      view.dispatch({ effects: dialogEffect.of(false) });
+      view.focus();
     },
-    "aria-label": view2.state.phrase("close"),
+    "aria-label": view.state.phrase("close"),
     type: "button"
   }, ["\xD7"]));
   function go() {
     let match = /^([+-])?(\d+)?(:\d+)?(%)?$/.exec(input.value);
     if (!match)
       return;
-    let { state } = view2, startLine = state.doc.lineAt(state.selection.main.head);
+    let { state } = view, startLine = state.doc.lineAt(state.selection.main.head);
     let [, sign, ln, cl, percent] = match;
     let col = cl ? +cl.slice(1) : 0;
     let line2 = ln ? +ln : startLine.number;
@@ -19003,11 +19003,11 @@ function createLineDialog(view2) {
     }
     let docLine = state.doc.line(Math.max(1, Math.min(state.doc.lines, line2)));
     let selection2 = EditorSelection.cursor(docLine.from + Math.max(0, Math.min(col, docLine.length)));
-    view2.dispatch({
+    view.dispatch({
       effects: [dialogEffect.of(false), EditorView.scrollIntoView(selection2.from, { y: "center" })],
       selection: selection2
     });
-    view2.focus();
+    view.focus();
   }
   return { dom };
 }
@@ -19024,14 +19024,14 @@ var dialogField = /* @__PURE__ */ StateField.define({
   },
   provide: (f) => showPanel.from(f, (val) => val ? createLineDialog : null)
 });
-var gotoLine = (view2) => {
-  let panel = getPanel(view2, createLineDialog);
+var gotoLine = (view) => {
+  let panel = getPanel(view, createLineDialog);
   if (!panel) {
     let effects = [dialogEffect.of(true)];
-    if (view2.state.field(dialogField, false) == null)
+    if (view.state.field(dialogField, false) == null)
       effects.push(StateEffect.appendConfig.of([dialogField, baseTheme$13]));
-    view2.dispatch({ effects });
-    panel = getPanel(view2, createLineDialog);
+    view.dispatch({ effects });
+    panel = getPanel(view, createLineDialog);
   }
   if (panel)
     panel.dom.querySelector("input").select();
@@ -19084,16 +19084,16 @@ function insideWord(check, state, from, to) {
   return check(state.sliceDoc(from, from + 1)) == CharCategory.Word && check(state.sliceDoc(to - 1, to)) == CharCategory.Word;
 }
 var matchHighlighter = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.decorations = this.getDeco(view2);
+  constructor(view) {
+    this.decorations = this.getDeco(view);
   }
   update(update) {
     if (update.selectionSet || update.docChanged || update.viewportChanged)
       this.decorations = this.getDeco(update.view);
   }
-  getDeco(view2) {
-    let conf = view2.state.facet(highlightConfig);
-    let { state } = view2, sel = state.selection;
+  getDeco(view) {
+    let conf = view.state.facet(highlightConfig);
+    let { state } = view, sel = state.selection;
     if (sel.ranges.length > 1)
       return Decoration.none;
     let range = sel.main, query, check = null;
@@ -19121,7 +19121,7 @@ var matchHighlighter = /* @__PURE__ */ ViewPlugin.fromClass(class {
       }
     }
     let deco = [];
-    for (let part of view2.visibleRanges) {
+    for (let part of view.visibleRanges) {
       let cursor2 = new SearchCursor(state.doc, query, part.from, part.to);
       while (!cursor2.next().done) {
         let { from, to } = cursor2.value;
@@ -19198,7 +19198,7 @@ var searchConfigFacet = /* @__PURE__ */ Facet.define({
       literal: false,
       regexp: false,
       wholeWord: false,
-      createPanel: (view2) => new SearchPanel(view2),
+      createPanel: (view) => new SearchPanel(view),
       scrollToMatch: (range) => EditorView.scrollIntoView(range)
     });
   }
@@ -19414,9 +19414,9 @@ var SearchState = class {
 var matchMark = /* @__PURE__ */ Decoration.mark({ class: "cm-searchMatch" });
 var selectedMatchMark = /* @__PURE__ */ Decoration.mark({ class: "cm-searchMatch cm-searchMatch-selected" });
 var searchHighlighter = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.view = view2;
-    this.decorations = this.highlight(view2.state.field(searchState));
+  constructor(view) {
+    this.view = view;
+    this.decorations = this.highlight(view.state.field(searchState));
   }
   update(update) {
     let state = update.state.field(searchState);
@@ -19426,14 +19426,14 @@ var searchHighlighter = /* @__PURE__ */ ViewPlugin.fromClass(class {
   highlight({ query, panel }) {
     if (!panel || !query.spec.valid)
       return Decoration.none;
-    let { view: view2 } = this;
+    let { view } = this;
     let builder = new RangeSetBuilder();
-    for (let i = 0, ranges = view2.visibleRanges, l = ranges.length; i < l; i++) {
+    for (let i = 0, ranges = view.visibleRanges, l = ranges.length; i < l; i++) {
       let { from, to } = ranges[i];
       while (i < l - 1 && to > ranges[i + 1].from - 2 * 250)
         to = ranges[++i].to;
-      query.highlight(view2.state, from, to, (from2, to2) => {
-        let selected = view2.state.selection.ranges.some((r) => r.from == from2 && r.to == to2);
+      query.highlight(view.state, from, to, (from2, to2) => {
+        let selected = view.state.selection.ranges.some((r) => r.from == from2 && r.to == to2);
         builder.add(from2, to2, selected ? selectedMatchMark : matchMark);
       });
     }
@@ -19443,46 +19443,46 @@ var searchHighlighter = /* @__PURE__ */ ViewPlugin.fromClass(class {
   decorations: (v) => v.decorations
 });
 function searchCommand(f) {
-  return (view2) => {
-    let state = view2.state.field(searchState, false);
-    return state && state.query.spec.valid ? f(view2, state) : openSearchPanel(view2);
+  return (view) => {
+    let state = view.state.field(searchState, false);
+    return state && state.query.spec.valid ? f(view, state) : openSearchPanel(view);
   };
 }
-var findNext = /* @__PURE__ */ searchCommand((view2, { query }) => {
-  let { to } = view2.state.selection.main;
-  let next = query.nextMatch(view2.state, to, to);
+var findNext = /* @__PURE__ */ searchCommand((view, { query }) => {
+  let { to } = view.state.selection.main;
+  let next = query.nextMatch(view.state, to, to);
   if (!next)
     return false;
   let selection2 = EditorSelection.single(next.from, next.to);
-  let config2 = view2.state.facet(searchConfigFacet);
-  view2.dispatch({
+  let config2 = view.state.facet(searchConfigFacet);
+  view.dispatch({
     selection: selection2,
-    effects: [announceMatch(view2, next), config2.scrollToMatch(selection2.main, view2)],
+    effects: [announceMatch(view, next), config2.scrollToMatch(selection2.main, view)],
     userEvent: "select.search"
   });
-  selectSearchInput(view2);
+  selectSearchInput(view);
   return true;
 });
-var findPrevious = /* @__PURE__ */ searchCommand((view2, { query }) => {
-  let { state } = view2, { from } = state.selection.main;
+var findPrevious = /* @__PURE__ */ searchCommand((view, { query }) => {
+  let { state } = view, { from } = state.selection.main;
   let prev = query.prevMatch(state, from, from);
   if (!prev)
     return false;
   let selection2 = EditorSelection.single(prev.from, prev.to);
-  let config2 = view2.state.facet(searchConfigFacet);
-  view2.dispatch({
+  let config2 = view.state.facet(searchConfigFacet);
+  view.dispatch({
     selection: selection2,
-    effects: [announceMatch(view2, prev), config2.scrollToMatch(selection2.main, view2)],
+    effects: [announceMatch(view, prev), config2.scrollToMatch(selection2.main, view)],
     userEvent: "select.search"
   });
-  selectSearchInput(view2);
+  selectSearchInput(view);
   return true;
 });
-var selectMatches = /* @__PURE__ */ searchCommand((view2, { query }) => {
-  let ranges = query.matchAll(view2.state, 1e3);
+var selectMatches = /* @__PURE__ */ searchCommand((view, { query }) => {
+  let ranges = query.matchAll(view.state, 1e3);
   if (!ranges || !ranges.length)
     return false;
-  view2.dispatch({
+  view.dispatch({
     selection: EditorSelection.create(ranges.map((r) => EditorSelection.range(r.from, r.to))),
     userEvent: "select.search.matches"
   });
@@ -19507,8 +19507,8 @@ var selectSelectionMatches = ({ state, dispatch }) => {
   }));
   return true;
 };
-var replaceNext = /* @__PURE__ */ searchCommand((view2, { query }) => {
-  let { state } = view2, { from, to } = state.selection.main;
+var replaceNext = /* @__PURE__ */ searchCommand((view, { query }) => {
+  let { state } = view, { from, to } = state.selection.main;
   if (state.readOnly)
     return false;
   let match = query.nextMatch(state, from, from);
@@ -19523,13 +19523,13 @@ var replaceNext = /* @__PURE__ */ searchCommand((view2, { query }) => {
     next = query.nextMatch(state, next.from, next.to);
     effects.push(EditorView.announce.of(state.phrase("replaced match on line $", state.doc.lineAt(from).number) + "."));
   }
-  let changeSet = view2.state.changes(changes);
+  let changeSet = view.state.changes(changes);
   if (next) {
     selection2 = EditorSelection.single(next.from, next.to).map(changeSet);
-    effects.push(announceMatch(view2, next));
-    effects.push(state.facet(searchConfigFacet).scrollToMatch(selection2.main, view2));
+    effects.push(announceMatch(view, next));
+    effects.push(state.facet(searchConfigFacet).scrollToMatch(selection2.main, view));
   }
-  view2.dispatch({
+  view.dispatch({
     changes: changeSet,
     selection: selection2,
     effects,
@@ -19537,25 +19537,25 @@ var replaceNext = /* @__PURE__ */ searchCommand((view2, { query }) => {
   });
   return true;
 });
-var replaceAll = /* @__PURE__ */ searchCommand((view2, { query }) => {
-  if (view2.state.readOnly)
+var replaceAll = /* @__PURE__ */ searchCommand((view, { query }) => {
+  if (view.state.readOnly)
     return false;
-  let changes = query.matchAll(view2.state, 1e9).map((match) => {
+  let changes = query.matchAll(view.state, 1e9).map((match) => {
     let { from, to } = match;
     return { from, to, insert: query.getReplacement(match) };
   });
   if (!changes.length)
     return false;
-  let announceText = view2.state.phrase("replaced $ matches", changes.length) + ".";
-  view2.dispatch({
+  let announceText = view.state.phrase("replaced $ matches", changes.length) + ".";
+  view.dispatch({
     changes,
     effects: EditorView.announce.of(announceText),
     userEvent: "input.replace.all"
   });
   return true;
 });
-function createSearchPanel(view2) {
-  return view2.state.facet(searchConfigFacet).createPanel(view2);
+function createSearchPanel(view) {
+  return view.state.facet(searchConfigFacet).createPanel(view);
 }
 function defaultQuery(state, fallback) {
   var _a2, _b, _c, _d, _e;
@@ -19572,42 +19572,42 @@ function defaultQuery(state, fallback) {
     wholeWord: (_e = fallback === null || fallback === void 0 ? void 0 : fallback.wholeWord) !== null && _e !== void 0 ? _e : config2.wholeWord
   });
 }
-function getSearchInput(view2) {
-  let panel = getPanel(view2, createSearchPanel);
+function getSearchInput(view) {
+  let panel = getPanel(view, createSearchPanel);
   return panel && panel.dom.querySelector("[main-field]");
 }
-function selectSearchInput(view2) {
-  let input = getSearchInput(view2);
-  if (input && input == view2.root.activeElement)
+function selectSearchInput(view) {
+  let input = getSearchInput(view);
+  if (input && input == view.root.activeElement)
     input.select();
 }
-var openSearchPanel = (view2) => {
-  let state = view2.state.field(searchState, false);
+var openSearchPanel = (view) => {
+  let state = view.state.field(searchState, false);
   if (state && state.panel) {
-    let searchInput = getSearchInput(view2);
-    if (searchInput && searchInput != view2.root.activeElement) {
-      let query = defaultQuery(view2.state, state.query.spec);
+    let searchInput = getSearchInput(view);
+    if (searchInput && searchInput != view.root.activeElement) {
+      let query = defaultQuery(view.state, state.query.spec);
       if (query.valid)
-        view2.dispatch({ effects: setSearchQuery.of(query) });
+        view.dispatch({ effects: setSearchQuery.of(query) });
       searchInput.focus();
       searchInput.select();
     }
   } else {
-    view2.dispatch({ effects: [
+    view.dispatch({ effects: [
       togglePanel.of(true),
-      state ? setSearchQuery.of(defaultQuery(view2.state, state.query.spec)) : StateEffect.appendConfig.of(searchExtensions)
+      state ? setSearchQuery.of(defaultQuery(view.state, state.query.spec)) : StateEffect.appendConfig.of(searchExtensions)
     ] });
   }
   return true;
 };
-var closeSearchPanel = (view2) => {
-  let state = view2.state.field(searchState, false);
+var closeSearchPanel = (view) => {
+  let state = view.state.field(searchState, false);
   if (!state || !state.panel)
     return false;
-  let panel = getPanel(view2, createSearchPanel);
-  if (panel && panel.dom.contains(view2.root.activeElement))
-    view2.focus();
-  view2.dispatch({ effects: togglePanel.of(false) });
+  let panel = getPanel(view, createSearchPanel);
+  if (panel && panel.dom.contains(view.root.activeElement))
+    view.focus();
+  view.dispatch({ effects: togglePanel.of(false) });
   return true;
 };
 var searchKeymap = [
@@ -19620,14 +19620,14 @@ var searchKeymap = [
   { key: "Mod-d", run: selectNextOccurrence, preventDefault: true }
 ];
 var SearchPanel = class {
-  constructor(view2) {
-    this.view = view2;
-    let query = this.query = view2.state.field(searchState).query.spec;
+  constructor(view) {
+    this.view = view;
+    let query = this.query = view.state.field(searchState).query.spec;
     this.commit = this.commit.bind(this);
     this.searchField = crelt("input", {
       value: query.search,
-      placeholder: phrase(view2, "Find"),
-      "aria-label": phrase(view2, "Find"),
+      placeholder: phrase(view, "Find"),
+      "aria-label": phrase(view, "Find"),
       class: "cm-textfield",
       name: "search",
       form: "",
@@ -19637,8 +19637,8 @@ var SearchPanel = class {
     });
     this.replaceField = crelt("input", {
       value: query.replace,
-      placeholder: phrase(view2, "Replace"),
-      "aria-label": phrase(view2, "Replace"),
+      placeholder: phrase(view, "Replace"),
+      "aria-label": phrase(view, "Replace"),
       class: "cm-textfield",
       name: "replace",
       form: "",
@@ -19671,22 +19671,22 @@ var SearchPanel = class {
     }
     this.dom = crelt("div", { onkeydown: (e) => this.keydown(e), class: "cm-search" }, [
       this.searchField,
-      button("next", () => findNext(view2), [phrase(view2, "next")]),
-      button("prev", () => findPrevious(view2), [phrase(view2, "previous")]),
-      button("select", () => selectMatches(view2), [phrase(view2, "all")]),
-      crelt("label", null, [this.caseField, phrase(view2, "match case")]),
-      crelt("label", null, [this.reField, phrase(view2, "regexp")]),
-      crelt("label", null, [this.wordField, phrase(view2, "by word")]),
-      ...view2.state.readOnly ? [] : [
+      button("next", () => findNext(view), [phrase(view, "next")]),
+      button("prev", () => findPrevious(view), [phrase(view, "previous")]),
+      button("select", () => selectMatches(view), [phrase(view, "all")]),
+      crelt("label", null, [this.caseField, phrase(view, "match case")]),
+      crelt("label", null, [this.reField, phrase(view, "regexp")]),
+      crelt("label", null, [this.wordField, phrase(view, "by word")]),
+      ...view.state.readOnly ? [] : [
         crelt("br"),
         this.replaceField,
-        button("replace", () => replaceNext(view2), [phrase(view2, "replace")]),
-        button("replaceAll", () => replaceAll(view2), [phrase(view2, "replace all")])
+        button("replace", () => replaceNext(view), [phrase(view, "replace")]),
+        button("replaceAll", () => replaceAll(view), [phrase(view, "replace all")])
       ],
       crelt("button", {
         name: "close",
-        onclick: () => closeSearchPanel(view2),
-        "aria-label": phrase(view2, "close"),
+        onclick: () => closeSearchPanel(view),
+        "aria-label": phrase(view, "close"),
         type: "button"
       }, ["\xD7"])
     ]);
@@ -19740,15 +19740,15 @@ var SearchPanel = class {
     return this.view.state.facet(searchConfigFacet).top;
   }
 };
-function phrase(view2, phrase2) {
-  return view2.state.phrase(phrase2);
+function phrase(view, phrase2) {
+  return view.state.phrase(phrase2);
 }
 var AnnounceMargin = 30;
 var Break = /[\s\.,:;?!]/;
-function announceMatch(view2, { from, to }) {
-  let line = view2.state.doc.lineAt(from), lineEnd = view2.state.doc.lineAt(to).to;
+function announceMatch(view, { from, to }) {
+  let line = view.state.doc.lineAt(from), lineEnd = view.state.doc.lineAt(to).to;
   let start = Math.max(line.from, from - AnnounceMargin), end = Math.min(lineEnd, to + AnnounceMargin);
-  let text = view2.state.sliceDoc(start, end);
+  let text = view.state.sliceDoc(start, end);
   if (start != line.from) {
     for (let i = 0; i < AnnounceMargin; i++)
       if (!Break.test(text[i + 1]) && Break.test(text[i])) {
@@ -19763,7 +19763,7 @@ function announceMatch(view2, { from, to }) {
         break;
       }
   }
-  return EditorView.announce.of(`${view2.state.phrase("current match")}. ${text} ${view2.state.phrase("on line")} ${line.number}.`);
+  return EditorView.announce.of(`${view.state.phrase("current match")}. ${text} ${view.state.phrase("on line")} ${line.number}.`);
 }
 var baseTheme3 = /* @__PURE__ */ EditorView.baseTheme({
   ".cm-panel.cm-search": {
@@ -19808,11 +19808,11 @@ var CompletionContext = class {
   completion sources—in the editor, the extension will create
   these for you.)
   */
-  constructor(state, pos, explicit, view2) {
+  constructor(state, pos, explicit, view) {
     this.state = state;
     this.pos = pos;
     this.explicit = explicit;
-    this.view = view2;
+    this.view = view;
     this.abortListeners = [];
     this.abortOnDocChange = false;
   }
@@ -20109,8 +20109,8 @@ var completionConfig = /* @__PURE__ */ Facet.define({
 function joinClass(a, b) {
   return a ? b ? a + " " + b : a : b;
 }
-function defaultPositionInfo(view2, list, option, info, space2, tooltip) {
-  let rtl = view2.textDirection == Direction.RTL, left = rtl, narrow = false;
+function defaultPositionInfo(view, list, option, info, space2, tooltip) {
+  let rtl = view.textDirection == Direction.RTL, left = rtl, narrow = false;
   let side = "top", offset, maxWidth;
   let spaceLeft = list.left - space2.left, spaceRight = space2.right - list.right;
   let infoWidth = info.right - info.left, infoHeight = info.bottom - info.top;
@@ -20202,8 +20202,8 @@ function rangeAroundSelected(total, selected, max) {
   return { from: total - (off + 1) * max, to: total - off * max };
 }
 var CompletionTooltip = class {
-  constructor(view2, stateField, applyCompletion2) {
-    this.view = view2;
+  constructor(view, stateField, applyCompletion2) {
+    this.view = view;
     this.stateField = stateField;
     this.applyCompletion = applyCompletion2;
     this.info = null;
@@ -20215,30 +20215,30 @@ var CompletionTooltip = class {
     };
     this.space = null;
     this.currentClass = "";
-    let cState = view2.state.field(stateField);
+    let cState = view.state.field(stateField);
     let { options, selected } = cState.open;
-    let config2 = view2.state.facet(completionConfig);
+    let config2 = view.state.facet(completionConfig);
     this.optionContent = optionContent(config2);
     this.optionClass = config2.optionClass;
     this.tooltipClass = config2.tooltipClass;
     this.range = rangeAroundSelected(options.length, selected, config2.maxRenderedOptions);
     this.dom = document.createElement("div");
     this.dom.className = "cm-tooltip-autocomplete";
-    this.updateTooltipClass(view2.state);
+    this.updateTooltipClass(view.state);
     this.dom.addEventListener("mousedown", (e) => {
-      let { options: options2 } = view2.state.field(stateField).open;
+      let { options: options2 } = view.state.field(stateField).open;
       for (let dom = e.target, match; dom && dom != this.dom; dom = dom.parentNode) {
         if (dom.nodeName == "LI" && (match = /-(\d+)$/.exec(dom.id)) && +match[1] < options2.length) {
-          this.applyCompletion(view2, options2[+match[1]]);
+          this.applyCompletion(view, options2[+match[1]]);
           e.preventDefault();
           return;
         }
       }
     });
     this.dom.addEventListener("focusout", (e) => {
-      let state = view2.state.field(this.stateField, false);
-      if (state && state.tooltip && view2.state.facet(completionConfig).closeOnBlur && e.relatedTarget != view2.contentDOM)
-        view2.dispatch({ effects: closeCompletionEffect.of(null) });
+      let state = view.state.field(this.stateField, false);
+      if (state && state.tooltip && view.state.facet(completionConfig).closeOnBlur && e.relatedTarget != view.contentDOM)
+        view.dispatch({ effects: closeCompletionEffect.of(null) });
     });
     this.showOptions(options, cState.id);
   }
@@ -20429,7 +20429,7 @@ var CompletionTooltip = class {
   }
 };
 function completionTooltip(stateField, applyCompletion2) {
-  return (view2) => new CompletionTooltip(view2, stateField, applyCompletion2);
+  return (view) => new CompletionTooltip(view, stateField, applyCompletion2);
 }
 function scrollIntoView2(container, element) {
   let parent = container.getBoundingClientRect();
@@ -20759,25 +20759,25 @@ var completionState = /* @__PURE__ */ StateField.define({
     EditorView.contentAttributes.from(f, (state) => state.attrs)
   ]
 });
-function applyCompletion(view2, option) {
+function applyCompletion(view, option) {
   const apply = option.completion.apply || option.completion.label;
-  let result = view2.state.field(completionState).active.find((a) => a.source == option.source);
+  let result = view.state.field(completionState).active.find((a) => a.source == option.source);
   if (!(result instanceof ActiveResult))
     return false;
   if (typeof apply == "string")
-    view2.dispatch(Object.assign(Object.assign({}, insertCompletionText(view2.state, apply, result.from, result.to)), { annotations: pickedCompletion.of(option.completion) }));
+    view.dispatch(Object.assign(Object.assign({}, insertCompletionText(view.state, apply, result.from, result.to)), { annotations: pickedCompletion.of(option.completion) }));
   else
-    apply(view2, option.completion, result.from, result.to);
+    apply(view, option.completion, result.from, result.to);
   return true;
 }
 var createTooltip = /* @__PURE__ */ completionTooltip(completionState, applyCompletion);
 function moveCompletionSelection(forward, by = "option") {
-  return (view2) => {
-    let cState = view2.state.field(completionState, false);
-    if (!cState || !cState.open || cState.open.disabled || Date.now() - cState.open.timestamp < view2.state.facet(completionConfig).interactionDelay)
+  return (view) => {
+    let cState = view.state.field(completionState, false);
+    if (!cState || !cState.open || cState.open.disabled || Date.now() - cState.open.timestamp < view.state.facet(completionConfig).interactionDelay)
       return false;
     let step = 1, tooltip;
-    if (by == "page" && (tooltip = getTooltip(view2, cState.open.tooltip)))
+    if (by == "page" && (tooltip = getTooltip(view, cState.open.tooltip)))
       step = Math.max(2, Math.floor(tooltip.dom.offsetHeight / tooltip.dom.querySelector("li").offsetHeight) - 1);
     let { length } = cState.open.options;
     let selected = cState.open.selected > -1 ? cState.open.selected + step * (forward ? 1 : -1) : forward ? 0 : length - 1;
@@ -20785,31 +20785,31 @@ function moveCompletionSelection(forward, by = "option") {
       selected = by == "page" ? 0 : length - 1;
     else if (selected >= length)
       selected = by == "page" ? length - 1 : 0;
-    view2.dispatch({ effects: setSelectedEffect.of(selected) });
+    view.dispatch({ effects: setSelectedEffect.of(selected) });
     return true;
   };
 }
-var acceptCompletion = (view2) => {
-  let cState = view2.state.field(completionState, false);
-  if (view2.state.readOnly || !cState || !cState.open || cState.open.selected < 0 || cState.open.disabled || Date.now() - cState.open.timestamp < view2.state.facet(completionConfig).interactionDelay)
+var acceptCompletion = (view) => {
+  let cState = view.state.field(completionState, false);
+  if (view.state.readOnly || !cState || !cState.open || cState.open.selected < 0 || cState.open.disabled || Date.now() - cState.open.timestamp < view.state.facet(completionConfig).interactionDelay)
     return false;
-  return applyCompletion(view2, cState.open.options[cState.open.selected]);
+  return applyCompletion(view, cState.open.options[cState.open.selected]);
 };
-var startCompletion = (view2) => {
-  let cState = view2.state.field(completionState, false);
+var startCompletion = (view) => {
+  let cState = view.state.field(completionState, false);
   if (!cState)
     return false;
-  view2.dispatch({ effects: startCompletionEffect.of(true) });
+  view.dispatch({ effects: startCompletionEffect.of(true) });
   return true;
 };
-var closeCompletion = (view2) => {
-  let cState = view2.state.field(completionState, false);
+var closeCompletion = (view) => {
+  let cState = view.state.field(completionState, false);
   if (!cState || !cState.active.some(
     (a) => a.state != 0
     /* State.Inactive */
   ))
     return false;
-  view2.dispatch({ effects: closeCompletionEffect.of(null) });
+  view.dispatch({ effects: closeCompletionEffect.of(null) });
   return true;
 };
 var RunningQuery = class {
@@ -20824,14 +20824,14 @@ var RunningQuery = class {
 var MaxUpdateCount = 50;
 var MinAbortTime = 1e3;
 var completionPlugin = /* @__PURE__ */ ViewPlugin.fromClass(class {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.debounceUpdate = -1;
     this.running = [];
     this.debounceAccept = -1;
     this.pendingStart = false;
     this.composing = 0;
-    for (let active of view2.state.field(completionState).active)
+    for (let active of view.state.field(completionState).active)
       if (active.isPending)
         this.startQuery(active);
   }
@@ -20974,15 +20974,15 @@ var completionPlugin = /* @__PURE__ */ ViewPlugin.fromClass(class {
 });
 var windows = typeof navigator == "object" && /* @__PURE__ */ /Win/.test(navigator.platform);
 var commitCharacters = /* @__PURE__ */ Prec.highest(/* @__PURE__ */ EditorView.domEventHandlers({
-  keydown(event, view2) {
-    let field = view2.state.field(completionState, false);
+  keydown(event, view) {
+    let field = view.state.field(completionState, false);
     if (!field || !field.open || field.open.disabled || field.open.selected < 0 || event.key.length > 1 || event.ctrlKey && !(windows && event.altKey) || event.metaKey)
       return false;
     let option = field.open.options[field.open.selected];
     let result = field.active.find((a) => a.source == option.source);
     let commitChars = option.completion.commitCharacters || result.result.commitCharacters;
     if (commitChars && commitChars.indexOf(event.key) > -1)
-      applyCompletion(view2, option);
+      applyCompletion(view, option);
     return false;
   }
 }));
@@ -21155,16 +21155,16 @@ function config(state, pos) {
   return state.languageDataAt("closeBrackets", pos)[0] || defaults2;
 }
 var android = typeof navigator == "object" && /* @__PURE__ */ /Android\b/.test(navigator.userAgent);
-var inputHandler2 = /* @__PURE__ */ EditorView.inputHandler.of((view2, from, to, insert2) => {
-  if ((android ? view2.composing : view2.compositionStarted) || view2.state.readOnly)
+var inputHandler2 = /* @__PURE__ */ EditorView.inputHandler.of((view, from, to, insert2) => {
+  if ((android ? view.composing : view.compositionStarted) || view.state.readOnly)
     return false;
-  let sel = view2.state.selection.main;
+  let sel = view.state.selection.main;
   if (insert2.length > 2 || insert2.length == 2 && codePointSize2(codePointAt2(insert2, 0)) == 1 || from != sel.from || to != sel.to)
     return false;
-  let tr = insertBracket(view2.state, insert2);
+  let tr = insertBracket(view.state, insert2);
   if (!tr)
     return false;
-  view2.dispatch(tr);
+  view.dispatch(tr);
   return true;
 });
 var deleteBracketPair = ({ state, dispatch }) => {
@@ -21490,8 +21490,8 @@ var lintState = /* @__PURE__ */ StateField.define({
   ]
 });
 var activeMark = /* @__PURE__ */ Decoration.mark({ class: "cm-lintRange cm-lintRange-active" });
-function lintTooltip(view2, pos, side) {
-  let { diagnostics } = view2.state.field(lintState);
+function lintTooltip(view, pos, side) {
+  let { diagnostics } = view.state.field(lintState);
   let found, start = -1, end = -1;
   diagnostics.between(pos - (side < 0 ? 1 : 0), pos + (side > 0 ? 1 : 0), (from, to, { spec }) => {
     if (pos >= from && pos <= to && (from == to || (pos > from || side > 0) && (pos < to || side < 0))) {
@@ -21501,50 +21501,50 @@ function lintTooltip(view2, pos, side) {
       return false;
     }
   });
-  let diagnosticFilter = view2.state.facet(lintConfig).tooltipFilter;
+  let diagnosticFilter = view.state.facet(lintConfig).tooltipFilter;
   if (found && diagnosticFilter)
-    found = diagnosticFilter(found, view2.state);
+    found = diagnosticFilter(found, view.state);
   if (!found)
     return null;
   return {
     pos: start,
     end,
-    above: view2.state.doc.lineAt(start).to < end,
+    above: view.state.doc.lineAt(start).to < end,
     create() {
-      return { dom: diagnosticsTooltip(view2, found) };
+      return { dom: diagnosticsTooltip(view, found) };
     }
   };
 }
-function diagnosticsTooltip(view2, diagnostics) {
-  return crelt("ul", { class: "cm-tooltip-lint" }, diagnostics.map((d) => renderDiagnostic(view2, d, false)));
+function diagnosticsTooltip(view, diagnostics) {
+  return crelt("ul", { class: "cm-tooltip-lint" }, diagnostics.map((d) => renderDiagnostic(view, d, false)));
 }
-var openLintPanel = (view2) => {
-  let field = view2.state.field(lintState, false);
+var openLintPanel = (view) => {
+  let field = view.state.field(lintState, false);
   if (!field || !field.panel)
-    view2.dispatch({ effects: maybeEnableLint(view2.state, [togglePanel2.of(true)]) });
-  let panel = getPanel(view2, LintPanel.open);
+    view.dispatch({ effects: maybeEnableLint(view.state, [togglePanel2.of(true)]) });
+  let panel = getPanel(view, LintPanel.open);
   if (panel)
     panel.dom.querySelector(".cm-panel-lint ul").focus();
   return true;
 };
-var closeLintPanel = (view2) => {
-  let field = view2.state.field(lintState, false);
+var closeLintPanel = (view) => {
+  let field = view.state.field(lintState, false);
   if (!field || !field.panel)
     return false;
-  view2.dispatch({ effects: togglePanel2.of(false) });
+  view.dispatch({ effects: togglePanel2.of(false) });
   return true;
 };
-var nextDiagnostic = (view2) => {
-  let field = view2.state.field(lintState, false);
+var nextDiagnostic = (view) => {
+  let field = view.state.field(lintState, false);
   if (!field)
     return false;
-  let sel = view2.state.selection.main, next = field.diagnostics.iter(sel.to + 1);
+  let sel = view.state.selection.main, next = field.diagnostics.iter(sel.to + 1);
   if (!next.value) {
     next = field.diagnostics.iter(0);
     if (!next.value || next.from == sel.from && next.to == sel.to)
       return false;
   }
-  view2.dispatch({ selection: { anchor: next.from, head: next.to }, scrollIntoView: true });
+  view.dispatch({ selection: { anchor: next.from, head: next.to }, scrollIntoView: true });
   return true;
 };
 var lintKeymap = [
@@ -21579,18 +21579,18 @@ function assignKeys(actions) {
     }
   return assigned;
 }
-function renderDiagnostic(view2, diagnostic, inPanel) {
+function renderDiagnostic(view, diagnostic, inPanel) {
   var _a2;
   let keys2 = inPanel ? assignKeys(diagnostic.actions) : [];
-  return crelt("li", { class: "cm-diagnostic cm-diagnostic-" + diagnostic.severity }, crelt("span", { class: "cm-diagnosticText" }, diagnostic.renderMessage ? diagnostic.renderMessage(view2) : diagnostic.message), (_a2 = diagnostic.actions) === null || _a2 === void 0 ? void 0 : _a2.map((action, i) => {
+  return crelt("li", { class: "cm-diagnostic cm-diagnostic-" + diagnostic.severity }, crelt("span", { class: "cm-diagnosticText" }, diagnostic.renderMessage ? diagnostic.renderMessage(view) : diagnostic.message), (_a2 = diagnostic.actions) === null || _a2 === void 0 ? void 0 : _a2.map((action, i) => {
     let fired = false, click = (e) => {
       e.preventDefault();
       if (fired)
         return;
       fired = true;
-      let found = findDiagnostic(view2.state.field(lintState).diagnostics, diagnostic);
+      let found = findDiagnostic(view.state.field(lintState).diagnostics, diagnostic);
       if (found)
-        action.apply(view2, found.from, found.to);
+        action.apply(view, found.from, found.to);
     };
     let { name: name2 } = action, keyIndex = keys2[i] ? name2.indexOf(keys2[i]) : -1;
     let nameElt = keyIndex < 0 ? name2 : [
@@ -21620,17 +21620,17 @@ var DiagnosticWidget = class extends WidgetType {
   }
 };
 var PanelItem = class {
-  constructor(view2, diagnostic) {
+  constructor(view, diagnostic) {
     this.diagnostic = diagnostic;
     this.id = "item_" + Math.floor(Math.random() * 4294967295).toString(16);
-    this.dom = renderDiagnostic(view2, diagnostic, true);
+    this.dom = renderDiagnostic(view, diagnostic, true);
     this.dom.id = this.id;
     this.dom.setAttribute("role", "option");
   }
 };
 var LintPanel = class _LintPanel {
-  constructor(view2) {
-    this.view = view2;
+  constructor(view) {
+    this.view = view;
     this.items = [];
     let onkeydown = (event) => {
       if (event.keyCode == 27) {
@@ -21652,7 +21652,7 @@ var LintPanel = class _LintPanel {
           if (keys2[i].toUpperCase().charCodeAt(0) == event.keyCode) {
             let found = findDiagnostic(this.view.state.field(lintState).diagnostics, diagnostic);
             if (found)
-              diagnostic.actions[i].apply(view2, found.from, found.to);
+              diagnostic.actions[i].apply(view, found.from, found.to);
           }
       } else {
         return;
@@ -21790,8 +21790,8 @@ var LintPanel = class _LintPanel {
       effects: movePanelSelection.of(selection2)
     });
   }
-  static open(view2) {
-    return new _LintPanel(view2);
+  static open(view) {
+    return new _LintPanel(view);
   }
 };
 function svg(content2, attrs = `viewBox="0 0 40 40"`) {
@@ -24401,14 +24401,14 @@ function snippetCompletion(template, completion) {
   return Object.assign(Object.assign({}, completion), { apply: snippet(template) });
 }
 var snippetPointerHandler = /* @__PURE__ */ EditorView.domEventHandlers({
-  mousedown(event, view2) {
-    let active = view2.state.field(snippetState, false), pos;
-    if (!active || (pos = view2.posAtCoords({ x: event.clientX, y: event.clientY })) == null)
+  mousedown(event, view) {
+    let active = view.state.field(snippetState, false), pos;
+    if (!active || (pos = view.posAtCoords({ x: event.clientX, y: event.clientY })) == null)
       return false;
     let match = active.ranges.find((r) => r.from <= pos && r.to >= pos);
     if (!match || match.field == active.active)
       return false;
-    view2.dispatch({
+    view.dispatch({
       selection: fieldSelection(active.ranges, match.field),
       effects: setActive.of(active.ranges.some((r) => r.field > match.field) ? new ActiveSnippet(active.ranges, match.field) : null),
       scrollIntoView: true
@@ -26005,6 +26005,71 @@ var tomorrow = create_theme_default({
 });
 
 // script.js
+var SAFETY_KEY = localStorage.getItem("goog-safety-key");
+if (SAFETY_KEY == "null") {
+  SAFETY_KEY = null;
+}
+while (!SAFETY_KEY) {
+  SAFETY_KEY = prompt("safety key (see pinned in discord)");
+  localStorage.setItem("goog-safety-key", SAFETY_KEY);
+  if (SAFETY_KEY) {
+    alert("its stored in browser localStorage just so you know");
+  }
+}
+SAFETY_KEY = SAFETY_KEY.trim();
+var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
+var websocketTiming = -1;
+var openToReceiving = true;
+var websocket = new WebSocket("ws://34.61.248.158:6969");
+window.websocket = websocket;
+websocket.onmessage = (event) => {
+  let data = JSON.parse(event.data);
+  if (data.type === "error") {
+    alert("websocket error:", data.error_msg);
+  }
+  if (data.type == "set-listen-done") {
+    openToReceiving = true;
+  }
+  if (typeof data.timing === "number") {
+    websocketTiming = data.timing;
+  }
+  if (openToReceiving) {
+    if (typeof data.solution === "string" && !solutionView.hasFocus) {
+      solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: data.solution } });
+    }
+    if (typeof data.annotations === "string" && !annotationsView.hasFocus) {
+      annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: data.annotations } });
+    }
+  }
+};
+websocket.onopen = (event) => {
+  websocketSendViewTask(taskElm.value * 1);
+};
+var websocketSendViewTask = () => {
+  websocket.send(JSON.stringify({ "type": "set-listen", "task": viewingTaskNum, "safety_key": SAFETY_KEY }));
+};
+var websocketSendAnnotations = () => {
+  if (annotationsView.hasFocus) {
+    websocket.send(JSON.stringify({
+      "safety_key": SAFETY_KEY,
+      "timing": websocketTiming,
+      "type": "update",
+      "task": viewingTaskNum,
+      "annotations": annotationsView.state.doc.toString()
+    }));
+  }
+};
+var websocketSendSolution = () => {
+  if (solutionView.hasFocus) {
+    websocket.send(JSON.stringify({
+      "safety_key": SAFETY_KEY,
+      "timing": websocketTiming,
+      "type": "update",
+      "task": viewingTaskNum,
+      "solution": solutionView.state.doc.toString()
+    }));
+  }
+};
 var randomUnsolved = document.getElementById("random-unsolved");
 var resultElm = document.getElementById("result");
 var taskElm = document.getElementById("task");
@@ -26012,53 +26077,28 @@ var previewElm = document.getElementById("preview");
 var leftButton = document.getElementById("left");
 var rightButton = document.getElementById("right");
 var runButton = document.getElementById("run");
-var uploadButton = document.getElementById("upload-solution");
-var gitpullButton = document.getElementById("do-git-pull");
-var gitpushButton = document.getElementById("do-git-push");
-var gitstatusButton = document.getElementById("do-git-status");
-taskElm.value = localStorage.getItem("goog-task") ?? "1";
-var updateUIWithTask = async (taskNum) => {
+var updateEverythingAccordingToViewingTaskNum = async () => {
+  if (websocket.readyState !== WebSocket.CONNECTING) {
+    annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: "" } });
+    solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: "" } });
+    websocketSendViewTask();
+    openToReceiving = false;
+  }
+  localStorage.setItem("goog-task", viewingTaskNum);
+  taskElm.value = viewingTaskNum + [];
   resultElm.style.backgroundImage = "";
-  uploadButton.disabled = true;
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
   }
-  previewElm.innerHTML = `<img src="/view/${taskNum}" class="max-width">`;
-  try {
-    let resp = await fetch(`/sols/${taskNum}`);
-    let text;
-    if (resp.status == 404) {
-      text = "";
-    } else {
-      text = await resp.text();
-    }
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
-    let resp2 = await fetch(`/annotations/${taskNum}`);
-    let text2;
-    if (resp2.status == 404) {
-      text2 = "";
-    } else {
-      text2 = await resp2.text();
-    }
-    annotations.dispatch({ changes: { from: 0, to: annotations.state.doc.length, insert: text2 } });
-  } catch (e) {
-    alert(e);
-  }
+  previewElm.innerHTML = `<img src="/view/${viewingTaskNum}" class="max-width">`;
 };
-var runTask = async (taskNum) => {
+var runTask = async () => {
   resultElm.style.backgroundImage = "";
-  if (taskNum == void 0) {
-    alert("massive error contact quasar098");
-    return;
-  }
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
   }
-  let resp = await fetch(`/run/${taskNum}`, { method: "POST", body: view.state.doc.toString() });
+  let resp = await fetch(`/run/${viewingTaskNum}`, { method: "POST", body: solutionView.state.doc.toString() });
   let text = await resp.text();
-  while (resultElm.firstChild) {
-    resultElm.firstChild.remove();
-  }
   if (resp.status != 200) {
     let newElm2 = document.createElement("p");
     if (resp.status == 500) {
@@ -26096,93 +26136,33 @@ var runTask = async (taskNum) => {
   return;
 };
 runButton.addEventListener("click", (e) => {
-  runTask(taskElm.value * 1);
+  runTask();
 });
 randomUnsolved.addEventListener("click", async (e) => {
-  let resp = await fetch("/random");
-  if (resp.status != 200) {
-    alert("no random challenges available (all solved?)");
-  } else {
-    let challengeNumber = await resp.text();
-    taskElm.value = challengeNumber;
-    localStorage.setItem("goog-task", challengeNumber);
-    updateUIWithTask(challengeNumber);
-  }
-});
-var doGitPull = async () => {
-  let resp = await fetch(`/actions/pull`, { method: "POST" });
-  if (resp.status == 500) {
-    alert(await resp.text());
-    return;
-  }
-  if (resp.status == 501 || resp.status == 200) {
-    let text = await resp.text();
-    alert(text);
-    return;
-  }
-  alert("Got unknown response from server. Check server logs.");
-};
-var doGitStatus = async () => {
-  let resp = await fetch("/actions/status");
-  alert(await resp.text());
-};
-var doGitPush = async () => {
-  let resp = await fetch("/actions/push", { method: "POST" });
-  alert(await resp.text());
-};
-gitstatusButton.addEventListener("click", (e) => {
-  doGitStatus();
-});
-gitpushButton.addEventListener("click", (e) => {
-  doGitPush();
-});
-gitpullButton.addEventListener("click", (e) => {
-  doGitPull();
-});
-var doUpload = async (taskNum) => {
-  if (taskNum == void 0) {
-    alert("massive error in doUpload");
-    return;
-  }
-  let resp = await fetch(`/actions/upload/${taskNum}`, { method: "POST" });
-  let text = await resp.text();
-  if (resp.status == 501 || resp.status == 502) {
-    alert(text);
-  } else if (resp.status != 200) {
-    if (text.includes("nothing to commit, working tree clean")) {
-      alert("unchanged file, nothing to commit");
-    } else {
-      alert("Upload failed\n" + text);
-    }
-  } else {
-    alert(text);
-  }
-};
-uploadButton.addEventListener("click", (e) => {
-  doUpload(taskElm.value * 1);
+  alert("uhh todo add functionality on ws-server");
 });
 taskElm.addEventListener("keydown", (e) => {
+  let prevTaskVal = taskElm.value;
   setTimeout(() => {
     if (!parseInt(taskElm.value)) {
       return;
     }
-    let taskNum = Math.min(Math.max(1 * taskElm.value, 1), 400);
-    taskElm.value = taskNum + [];
-    localStorage.setItem("goog-task", taskElm.value);
-    updateUIWithTask(taskNum);
+    if (![...Array(401).keys()].slice(1).includes(parseInt(taskElm.value))) {
+      alert(`bad task value "${taskElm.value}"`);
+      viewingTaskNum = parseInt(prevTaskVal);
+    } else {
+      viewingTaskNum = Math.min(Math.max(parseInt(taskElm.value), 1), 400);
+    }
+    updateEverythingAccordingToViewingTaskNum();
   }, 20);
 });
 leftButton.addEventListener("click", (e) => {
-  let taskNum = (1 * taskElm.value + 398) % 400 + 1;
-  taskElm.value = taskNum + [];
-  localStorage.setItem("goog-task", taskElm.value);
-  updateUIWithTask(taskNum);
+  viewingTaskNum = (viewingTaskNum + 398) % 400 + 1;
+  updateEverythingAccordingToViewingTaskNum();
 });
 rightButton.addEventListener("click", (e) => {
-  let taskNum = (1 * taskElm.value + 400) % 400 + 1;
-  taskElm.value = taskNum + [];
-  localStorage.setItem("goog-task", taskElm.value);
-  updateUIWithTask(taskNum);
+  viewingTaskNum = (viewingTaskNum + 400) % 400 + 1;
+  updateEverythingAccordingToViewingTaskNum();
 });
 var theme2 = EditorView.theme({
   "&": {
@@ -26190,30 +26170,27 @@ var theme2 = EditorView.theme({
     border: "1px solid #c0c0c0"
   }
 });
-var view = new EditorView({
-  parent: document.getElementById("editor"),
-  doc: "",
-  extensions: [basicSetup, python(), oneDark, [theme2]]
-  // EditorView.lineWrapping],
-});
-var annotationsUploadTimeout = void 0;
-var silentlisten = EditorView.updateListener.of((v) => {
+var solutionListen = EditorView.updateListener.of((v) => {
   if (v.docChanged) {
-    if (annotationsUploadTimeout !== void 0) {
-      clearTimeout(annotationsUploadTimeout);
-    }
-    annotationsUploadTimeout = setTimeout(() => {
-      fetch(`/annotations/${1 * taskElm.value}`, { method: "POST", body: annotations.state.doc.toString() });
-    }, 500);
+    websocketSendSolution();
   }
 });
-var annotations = new EditorView({
+var solutionView = new EditorView({
+  parent: document.getElementById("editor"),
+  doc: "",
+  extensions: [basicSetup, python(), oneDark, [theme2], solutionListen]
+});
+var annotationsListen = EditorView.updateListener.of((v) => {
+  if (v.docChanged) {
+    websocketSendAnnotations();
+  }
+});
+var annotationsView = new EditorView({
   parent: document.getElementById("annotations"),
   doc: "",
-  extensions: [basicSetup, python(), coolGlow, [theme2], silentlisten]
-  // EditorView.lineWrapping],
+  extensions: [basicSetup, python(), coolGlow, [theme2], annotationsListen]
 });
 window.theme = theme2;
-window.view = view;
-window.annotations = annotations;
-updateUIWithTask(localStorage.getItem("goog-task"));
+window.solutionView = solutionView;
+window.annotationsView = annotationsView;
+updateEverythingAccordingToViewingTaskNum();

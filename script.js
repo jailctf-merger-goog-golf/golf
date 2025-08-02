@@ -1,3 +1,76 @@
+// you have to set the safety key
+let SAFETY_KEY = localStorage.getItem("goog-safety-key");
+if (SAFETY_KEY == 'null') {
+    SAFETY_KEY = null;
+}
+while (!SAFETY_KEY) {
+    SAFETY_KEY = prompt("safety key (see pinned in discord)");
+    localStorage.setItem("goog-safety-key", SAFETY_KEY);
+    if (SAFETY_KEY) {
+        alert("its stored in browser localStorage just so you know");
+    }
+}
+SAFETY_KEY = SAFETY_KEY.trim()
+
+let viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
+let lastViewingTaskNum = viewingTaskNum;
+
+// websockets stuff
+let websocketTiming = -1;
+let openToReceiving = true;
+let websocket = new WebSocket("ws://34.61.248.158:6969")
+window.websocket = websocket;
+websocket.onmessage = (event) => {
+    let data = JSON.parse(event.data);
+    if (data.type === "error") {
+        alert("websocket error:", data.error_msg)
+    }
+    if (data.type == "set-listen-done") {
+        openToReceiving = true;
+    }
+    if (typeof data.timing === "number") {
+        websocketTiming = data.timing;
+    }
+    if (openToReceiving) {
+        if (typeof data.solution === "string" && !solutionView.hasFocus) {
+            solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: data.solution } })
+        }
+        if (typeof data.annotations === "string" && !annotationsView.hasFocus) {
+            annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: data.annotations } })
+        }
+    }
+};
+websocket.onopen = (event) => {
+    websocketSendViewTask(taskElm.value*1)
+};
+let websocketSendViewTask = () => {
+    websocket.send(JSON.stringify({"type": "set-listen", "task": viewingTaskNum, "safety_key": SAFETY_KEY}))
+}
+let websocketSendAnnotations = () => {
+    if (annotationsView.hasFocus) {
+        websocket.send(JSON.stringify({
+            "safety_key": SAFETY_KEY,
+            "timing": websocketTiming,
+            "type": "update",
+            "task": viewingTaskNum,
+            "annotations": annotationsView.state.doc.toString()
+        }))
+    }
+}
+let websocketSendSolution = () => {
+    if (solutionView.hasFocus) {
+        websocket.send(JSON.stringify({
+            "safety_key": SAFETY_KEY,
+            "timing": websocketTiming,
+            "type": "update",
+            "task": viewingTaskNum,
+            "solution": solutionView.state.doc.toString()
+        }))
+    }
+}
+
+
+// everything else
 import {EditorView, basicSetup} from "codemirror"
 import {python} from "@codemirror/lang-python"
 import {oneDark} from "@codemirror/theme-one-dark"
@@ -11,56 +84,30 @@ let previewElm = document.getElementById("preview");
 let leftButton = document.getElementById("left");
 let rightButton = document.getElementById("right");
 let runButton = document.getElementById("run");
-let uploadButton = document.getElementById("upload-solution");
-let gitpullButton = document.getElementById("do-git-pull");
-let gitpushButton = document.getElementById("do-git-push");
-let gitstatusButton = document.getElementById("do-git-status");
 
-taskElm.value = localStorage.getItem("goog-task") ?? "1"
 
-let updateUIWithTask = async (taskNum) => {
+let updateEverythingAccordingToViewingTaskNum = async () => {
+    if (websocket.readyState !== WebSocket.CONNECTING) {
+        annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: "" } })
+        solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: "" } })
+        websocketSendViewTask()
+        openToReceiving = false;
+    }
+    localStorage.setItem("goog-task", viewingTaskNum)
+    taskElm.value = viewingTaskNum+[];
     resultElm.style.backgroundImage = "";
-    uploadButton.disabled = true; // dont upload until we get a valid submission
-    while (resultElm.firstChild) {
-        resultElm.firstChild.remove();
-    }
-    previewElm.innerHTML = `<img src="/view/${taskNum}" class="max-width">`
-    try {
-        let resp = await fetch(`/sols/${taskNum}`)
-        let text;
-        if (resp.status == 404) {
-            text = ""
-        } else {
-            text = await resp.text();
-        }
-        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } })
-        let resp2 = await fetch(`/annotations/${taskNum}`)
-        let text2;
-        if (resp2.status == 404) {
-            text2 = ""
-        } else {
-            text2 = await resp2.text()
-        }
-        annotations.dispatch({ changes: { from: 0, to: annotations.state.doc.length, insert: text2 } })
-    } catch (e) {
-        alert(e)
-    }
+    while (resultElm.firstChild) { resultElm.firstChild.remove(); }
+    previewElm.innerHTML = `<img src="/view/${viewingTaskNum}" class="max-width">`
 }
 
-let runTask = async (taskNum) => {
+let runTask = async () => {
     resultElm.style.backgroundImage = "";
-    if (taskNum == undefined) {
-        alert("massive error contact quasar098");
-        return
-    }
-    while (resultElm.firstChild) {
-        resultElm.firstChild.remove();
-    }
-    let resp = await fetch(`/run/${taskNum}`, {method: "POST", body: view.state.doc.toString()})
+    while (resultElm.firstChild) { resultElm.firstChild.remove(); }
+
+    let resp = await fetch(`/run/${viewingTaskNum}`, {method: "POST", body: solutionView.state.doc.toString()})
     let text = await resp.text();
-    while (resultElm.firstChild) {
-        resultElm.firstChild.remove();
-    }
+
+    // everything below is showing results
     if (resp.status != 200) {
         let newElm = document.createElement("p")
         if (resp.status == 500) {
@@ -112,116 +159,37 @@ let runTask = async (taskNum) => {
 }
 
 runButton.addEventListener("click", (e) => {
-    runTask(taskElm.value*1)
+    runTask()
 })
 
 randomUnsolved.addEventListener('click', async (e) => {
-    let resp = await fetch("/random");
-    if (resp.status != 200) {
-        alert("no random challenges available (all solved?)");
-    } else {
-        let challengeNumber = await resp.text();
-        taskElm.value = challengeNumber
-        localStorage.setItem("goog-task", challengeNumber)
-        updateUIWithTask(challengeNumber)
-    }
+    alert("uhh todo add functionality on ws-server");
 })
 
-let doGitPull = async () => {
-    let resp = await fetch(`/actions/pull`, {method: "POST"});
-    if (resp.status == 500) {
-        // returncode was nonzero
-        alert(await resp.text());
-//        alert("Git Pull failed. Check server logs for details.");
-        return;
-    }
-
-    if (resp.status == 501 || resp.status == 200) {
-        // timeout/success, just alert return message from server
-        let text = await resp.text();
-        alert(text);
-        return;
-    }
-
-    alert("Got unknown response from server. Check server logs.");
-}
-
-let doGitStatus = async () => {
-    let resp = await fetch("/actions/status");
-    alert(await resp.text());
-}
-
-let doGitPush = async () => {
-    let resp = await fetch("/actions/push", {method: "POST"});
-    alert(await resp.text());
-}
-
-gitstatusButton.addEventListener("click", (e) => {
-    doGitStatus();
-})
-
-gitpushButton.addEventListener("click", (e) => {
-    doGitPush();
-})
-
-gitpullButton.addEventListener("click", (e) => {
-    doGitPull();
-})
-
-let doUpload = async (taskNum) => {
-    if (taskNum == undefined) {
-        alert("massive error in doUpload");
-        return
-    }
-
-    let resp = await fetch(`/actions/upload/${taskNum}`, {method: "POST"})
-    let text = await resp.text();
-
-    if (resp.status == 501 || resp.status == 502) {
-        // timeout error or missing file, can just alert as normal
-        alert(text);
-    }
-    else if (resp.status != 200) {
-        // git cmd failing or other error
-        if (text.includes("nothing to commit, working tree clean")) {
-            alert("unchanged file, nothing to commit");
-        } else {
-            alert("Upload failed\n" + text);
-        }
-    }
-    else {
-        // yay success! just give them the message that the server returned
-        alert(text);
-    }
-
-}
-
-uploadButton.addEventListener("click", (e) => {
-    doUpload(taskElm.value*1)
-})
 
 taskElm.addEventListener("keydown", (e) => {
+    let prevTaskVal = taskElm.value;
+
     setTimeout(() => {
         if (!parseInt(taskElm.value)) {
             return;
         }
-        let taskNum = Math.min(Math.max((1*taskElm.value), 1), 400)
-        taskElm.value = taskNum + []
-        localStorage.setItem("goog-task", taskElm.value)
-        updateUIWithTask(taskNum)
+        if (![...Array(401).keys()].slice(1).includes(parseInt(taskElm.value))) {
+            alert(`bad task value "${taskElm.value}"`);
+            viewingTaskNum = parseInt(prevTaskVal);
+        } else {
+            viewingTaskNum = Math.min(Math.max(parseInt(taskElm.value), 1), 400)
+        }
+        updateEverythingAccordingToViewingTaskNum()
     }, 20)
 })
 leftButton.addEventListener("click", (e) => {
-    let taskNum = ((1*taskElm.value) + 398) % 400 + 1
-    taskElm.value = taskNum + []
-    localStorage.setItem("goog-task", taskElm.value)
-    updateUIWithTask(taskNum)
+    viewingTaskNum = (viewingTaskNum + 398) % 400 + 1
+    updateEverythingAccordingToViewingTaskNum()
 })
 rightButton.addEventListener("click", (e) => {
-    let taskNum = ((1*taskElm.value) + 400) % 400 + 1
-    taskElm.value = taskNum + []
-    localStorage.setItem("goog-task", taskElm.value)
-    updateUIWithTask(taskNum)
+    viewingTaskNum = (viewingTaskNum + 400) % 400 + 1
+    updateEverythingAccordingToViewingTaskNum()
 })
 
 const theme = EditorView.theme({
@@ -231,34 +199,30 @@ const theme = EditorView.theme({
   },
 });
 
-const view = new EditorView({
-  parent: document.getElementById("editor"),
-  doc: "",
-  extensions: [basicSetup, python(), oneDark, [theme]],// EditorView.lineWrapping],
-})
-
-let annotationsUploadTimeout = undefined;
-
-
-let silentlisten = EditorView.updateListener.of((v) => {
+let solutionListen = EditorView.updateListener.of((v) => {
     if (v.docChanged) {
-      if (annotationsUploadTimeout !== undefined) {
-        clearTimeout(annotationsUploadTimeout)
-      }
-      annotationsUploadTimeout = setTimeout(() => {
-        fetch(`/annotations/${1*taskElm.value}`, {method: 'POST', body: annotations.state.doc.toString()})
-      }, 500)
+        websocketSendSolution()
     }
 })
+const solutionView = new EditorView({
+  parent: document.getElementById("editor"),
+  doc: "",
+  extensions: [basicSetup, python(), oneDark, [theme], solutionListen],
+})
 
-const annotations = new EditorView({
+let annotationsListen = EditorView.updateListener.of((v) => {
+    if (v.docChanged) {
+        websocketSendAnnotations()
+    }
+})
+const annotationsView = new EditorView({
   parent: document.getElementById("annotations"),
   doc: "",
-  extensions: [basicSetup, python(), coolGlow, [theme], silentlisten],// EditorView.lineWrapping],
+  extensions: [basicSetup, python(), coolGlow, [theme], annotationsListen],
 })
 
 window.theme = theme;
-window.view = view;
-window.annotations = annotations;
+window.solutionView = solutionView;
+window.annotationsView = annotationsView;
 
-updateUIWithTask(localStorage.getItem("goog-task"))
+updateEverythingAccordingToViewingTaskNum()
