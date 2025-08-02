@@ -26128,7 +26128,6 @@ var runTask = async () => {
   }
   if (text.includes("code IS READY for submission")) {
     resultElm.style.backgroundImage = "url(https://i.etsystatic.com/28810262/r/il/2fc5e0/5785166966/il_fullxfull.5785166966_nvy4.jpg)";
-    uploadButton.disabled = false;
   }
   let newElm = document.createElement("code");
   newElm.innerText = text;
