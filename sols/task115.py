@@ -1,0 +1,1 @@
+p=lambda g,h=sorted:max([h({*g[0]},key=g[0].index)],[[i]for i in h({a[0]for a in g},key=lambda a:str(g).find(str(a)))])
