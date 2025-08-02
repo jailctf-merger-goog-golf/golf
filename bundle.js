@@ -26005,6 +26005,7 @@ var tomorrow = create_theme_default({
 });
 
 // script.js
+var randomUnsolved = document.getElementById("random-unsolved");
 var resultElm = document.getElementById("result");
 var taskElm = document.getElementById("task");
 var previewElm = document.getElementById("preview");
@@ -26094,6 +26095,17 @@ var runTask = async (taskNum) => {
 };
 runButton.addEventListener("click", (e) => {
   runTask(taskElm.value * 1);
+});
+randomUnsolved.addEventListener("click", async (e) => {
+  let resp = await fetch("/random");
+  if (resp.status != 200) {
+    alert("no random challenges available (all solved?)");
+  } else {
+    let challengeNumber = await resp.text();
+    taskElm.value = challengeNumber;
+    localStorage.setItem("goog-task", challengeNumber);
+    updateUIWithTask(challengeNumber);
+  }
 });
 var doGitPull = async () => {
   let resp = await fetch(`/actions/pull`, { method: "POST" });

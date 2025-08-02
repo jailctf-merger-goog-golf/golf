@@ -2,6 +2,7 @@ from flask import Flask, render_template_string, url_for, send_from_directory, s
 from flask import request
 import subprocess
 import os
+from random import choice
 
 app = Flask(__name__)
 
@@ -143,6 +144,15 @@ def git_pull():
         return stderr, status_code
 
     return stdout, 200
+
+
+@app.get('/random')
+def random_chal():
+    ok = set(range(1,401))-{int(taskfile.removeprefix("task").removesuffix(".py")) for taskfile in os.listdir('./sols/')}
+    if len(ok) == 0:
+        return 'uhhhh all completed !?!?!?! good job future me', 500
+    return str(choice(list(ok))), 200
+
 
 if __name__ == '__main__':
     app.run()

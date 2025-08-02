@@ -4,6 +4,7 @@ import {oneDark} from "@codemirror/theme-one-dark"
 import {coolGlow} from 'thememirror';
 
 
+let randomUnsolved = document.getElementById('random-unsolved');
 let resultElm = document.getElementById("result");
 let taskElm = document.getElementById("task");
 let previewElm = document.getElementById("preview");
@@ -110,6 +111,18 @@ let runTask = async (taskNum) => {
 
 runButton.addEventListener("click", (e) => {
     runTask(taskElm.value*1)
+})
+
+randomUnsolved.addEventListener('click', async (e) => {
+    let resp = await fetch("/random");
+    if (resp.status != 200) {
+        alert("no random challenges available (all solved?)");
+    } else {
+        let challengeNumber = await resp.text();
+        taskElm.value = challengeNumber
+        localStorage.setItem("goog-task", challengeNumber)
+        updateUIWithTask(challengeNumber)
+    }
 })
 
 let doGitPull = async () => {
