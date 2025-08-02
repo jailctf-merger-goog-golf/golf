@@ -3,5 +3,5 @@ working
 .vscode
 __pycache__
 node_modules
-arc-dsl
 default-sols/arc-dsl
+default-sols/data
