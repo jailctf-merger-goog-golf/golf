@@ -1,0 +1,1 @@
+p=lambda g,h=range(20):[[g[i//2|1][j//2|1]for j in h]for i in h]
