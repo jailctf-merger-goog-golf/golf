@@ -1,14 +1,9 @@
 def p(g):
- h,w=len(g),len(g[0]);v,o=set(),[]
- for i in range(h):
-  for j in range(w):
-   if(i,j)not in v and g[i][j]==0:
-    c=[(i,j)];s=set()
-    while c:
-     x,y=c.pop()
-     if(x,y)in v or not(0<=x<h and 0<=y<w)or g[x][y]!=0:continue
-     v.add((x,y));s.add((x,y));c+=[(x+a,y+b)for a,b in[(0,1),(0,-1),(1,0),(-1,0)]]
-    if s and not any(x in[0,h-1]or y in[0,w-1]for x,y in s):o+=s
- r=[[*a]for a in g]
- for i,j in o:r[i][j]=4
- return r
+ def f(i,j):
+  if-1<i<n>j>=0==g[i][j]:
+   g[i][j]=4
+   for x,y in[(0,1),(1,0),(-1,0),(0,-1)]:f(i+x,j+y)
+ n=len(g)
+ for i in range(n):
+  for j in range(n):0<i<n-1>j>0 or f(i,j)
+ return[[6^c+2for c in r]for r in g]
