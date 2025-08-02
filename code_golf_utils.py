@@ -242,7 +242,9 @@ def verify_program(task_num, examples):
                     wrong += 1
             except Exception as e:
                 if not has_printed_first_err:
-                    print("ERROR:", e)
+                    import traceback
+                    print("ERROR:")
+                    traceback.print_exc(file=sys.stdout)
                 has_printed_first_err = True
                 wrong += 1
         return right, wrong, expected
