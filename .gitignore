@@ -6,3 +6,4 @@ node_modules
 default-sols/arc-dsl
 default-sols/data
 legend.png
+.env

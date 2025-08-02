@@ -1,10 +1,34 @@
-from flask import Flask, render_template_string, url_for, send_from_directory, send_file, request
+from flask import Flask, send_from_directory, send_file, request, session, redirect
 from flask import request
 import subprocess
 import os
 from random import choice
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SAFETY_KEY = os.getenv('SAFETY_KEY')
+if SAFETY_KEY is None:
+    print("NO \"SAFETY_KEY\" IN .env ALERT ALERT BAD BAD SET IT NOW")
+    exit(1)
+
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+if SECRET_KEY is None:
+    print("NO \"SECRET_KEY\" IN .env ALERT ALERT BAD BAD SET IT NOW")
+    exit(1)
+
+
+def auth_required(func):
+    def wrapper(*args, **kwargs):
+        if "auth" not in session or not session["auth"]:
+            raise PermissionError('Unauthorized', 401)
+        return func(*args, **kwargs)
+    return wrapper
+
 
 app = Flask(__name__)
+
 
 def execute_task(task):
     TIMEOUT = 10  # seconds
@@ -25,26 +49,41 @@ def execute_task(task):
 
     return output, status_code
 
+
 @app.route('/')
 def home():
+    if "auth" not in session or not session["auth"]:
+        return send_file("./auth.html")
     return send_file("./index.html")
 
 
+@app.post('/auth')
+def auth():
+    if request.data.decode('latin-1') == SAFETY_KEY:
+        session["auth"] = True
+        return 'come on through', 200
+    return 'nope', 401
+
+
+@auth_required
 @app.route('/style.css')
 def swag():
     return send_file("./style.css")
 
 
+@auth_required
 @app.route('/cm6.bundle.min.js')
 def cm6():
     return send_file("./cm6.bundle.min.js", mimetype="application/javascript")
 
 
+@auth_required
 @app.route('/bundle.js')
 def script():
     return send_file("./bundle.js", mimetype="application/javascript")
 
 
+@auth_required
 @app.route('/working/<path:filepath>')
 def working(filepath):
     os.makedirs("working", exist_ok=True)
@@ -56,6 +95,7 @@ def legend():
     return send_file("./legend.png", mimetype='image/png')
 
 
+@auth_required
 @app.post('/run/<int:task>')
 def run(task):
     fpath = f"./sols/task{task:03d}.py"
@@ -69,6 +109,7 @@ def run(task):
     return output, status_code
 
 
+@auth_required
 @app.get('/view/<int:task>')
 def view(task):
     os.makedirs("working/view", exist_ok=True)
@@ -77,6 +118,7 @@ def view(task):
     return send_from_directory("./working/view/", f"task{task:03d}.png", mimetype='image/png')
 
 
+@auth_required
 @app.get('/random')
 def random_chal():
     ok = set(range(1,401))-{int(taskfile.removeprefix("task").removesuffix(".py")) for taskfile in os.listdir('./sols/')}
@@ -86,4 +128,5 @@ def random_chal():
 
 
 if __name__ == '__main__':
+    app.secret_key = SECRET_KEY
     app.run()
