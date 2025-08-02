@@ -87,6 +87,13 @@ let previewElm = document.getElementById("preview");
 let leftButton = document.getElementById("left");
 let rightButton = document.getElementById("right");
 let runButton = document.getElementById("run");
+let viewGenCode = document.getElementById("view-gen-code");
+let charCount = document.getElementById('char-count');
+
+
+viewGenCode.addEventListener("click", (e) => {
+    window.open(`https://github.com/google/ARC-GEN/blob/main/tasks/training/task${String(viewingTaskNum).padStart(3,'0')}.py`)
+})
 
 
 let updateEverythingAccordingToViewingTaskNum = async () => {
@@ -200,6 +207,24 @@ const theme = EditorView.theme({
     border: "1px solid #c0c0c0"
   },
 });
+
+setInterval(() => {
+    try {
+        let solstart = solutionView.state.selection.ranges[0].from ?? 0;
+        let solend = solutionView.state.selection.ranges[0].to ?? 0;
+        let annostart = annotationsView.state.selection.ranges[0].from ?? 0;
+        let annoend = annotationsView.state.selection.ranges[0].to ?? 0;
+        if (Math.abs(solend-solstart) > 0 || Math.abs(annoend-annostart) > 0) {
+            if (Math.abs(solend-solstart) > 0) {
+                charCount.innerText = Math.abs(solend-solstart) + " bytes"
+            } else {
+                charCount.innerText = Math.abs(annoend-annostart) + " bytes"
+            }
+        } else {
+            charCount.innerText = solutionView.state.doc.toString().length + " bytes"
+        }
+    } catch (e) { console.log(e) }
+}, 50)
 
 let solutionListen = EditorView.updateListener.of((v) => {
     if (v.docChanged) {

@@ -121,3 +121,12 @@ img {
 .cm-editor {
     border: none;
 }
+#char-count {
+    font-size: 20px;
+    margin-left: 8px;
+    color: white;
+    background-color: #222;
+    font-family: consolas;
+    border: 2px solid #333;
+    padding: 3px;
+}

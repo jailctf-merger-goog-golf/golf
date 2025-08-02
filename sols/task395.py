@@ -1,1 +1,1 @@
-p=lambda g,r=range(3):[[2-2*(g[y][x]//8|g[y+3][x])for x in r]for y in r]
+p=lambda g:[[2&6-v-a.pop(0)for v in g.pop(0)]for a in g[3:]]
