@@ -29,6 +29,10 @@ websocket.onmessage = (event) => {
     if (data.type == "set-listen-done") {
         openToReceiving = true;
     }
+    if (data.type == "random-unsolved") {
+        viewingTaskNum = data.task ?? 1;
+        updateEverythingAccordingToViewingTaskNum()
+    }
     if (typeof data.timing === "number") {
         websocketTiming = data.timing;
     }
@@ -70,6 +74,12 @@ let websocketSendSolution = () => {
             "solution": solutionView.state.doc.toString()
         }))
     }
+}
+let websocketSendRandomUnsolvedRequest = () => {
+    websocket.send(JSON.stringify({
+        "safety_key": SAFETY_KEY,
+        "type": "random-unsolved"
+    }))
 }
 
 
@@ -172,7 +182,7 @@ runButton.addEventListener("click", (e) => {
 })
 
 randomUnsolved.addEventListener('click', async (e) => {
-    alert("uhh todo add functionality on ws-server");
+    websocketSendRandomUnsolvedRequest();
 })
 
 

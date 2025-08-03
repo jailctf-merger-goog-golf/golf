@@ -7,3 +7,4 @@ default-sols/arc-dsl
 default-sols/data
 legend.png
 .env
+sols/*

@@ -132,14 +132,14 @@ def load_examples(task_num):
 
 
 def show_legend():
-    image = [[(255, 255, 255) for _ in range(12)] for _ in range(3)]
+    image = [[(255, 255, 255) for _ in range(10)] for _ in range(1)]
     for idx, color in enumerate(colors):
-        image[1][idx + 1] = color
+        image[0][idx] = color
     fig = plt.figure(figsize=(10, 5))
     ax = fig.add_axes([0, 0, 1, 1])
     for idx, _ in enumerate(colors):
         color = "white" if idx in [0, 9] else "black"
-        ax.text(idx + 0.9, 1.1, str(idx), color=color, size=22)
+        ax.text(idx - 0.1, .1, str(idx), color=color, size=22)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.imshow(np.array(image))

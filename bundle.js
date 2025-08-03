@@ -26031,6 +26031,10 @@ websocket.onmessage = (event) => {
   if (data.type == "set-listen-done") {
     openToReceiving = true;
   }
+  if (data.type == "random-unsolved") {
+    viewingTaskNum = data.task ?? 1;
+    updateEverythingAccordingToViewingTaskNum();
+  }
   if (typeof data.timing === "number") {
     websocketTiming = data.timing;
   }
@@ -26072,6 +26076,12 @@ var websocketSendSolution = () => {
       "solution": solutionView.state.doc.toString()
     }));
   }
+};
+var websocketSendRandomUnsolvedRequest = () => {
+  websocket.send(JSON.stringify({
+    "safety_key": SAFETY_KEY,
+    "type": "random-unsolved"
+  }));
 };
 var randomUnsolved = document.getElementById("random-unsolved");
 var resultElm = document.getElementById("result");
@@ -26146,7 +26156,7 @@ runButton.addEventListener("click", (e) => {
   runTask();
 });
 randomUnsolved.addEventListener("click", async (e) => {
-  alert("uhh todo add functionality on ws-server");
+  websocketSendRandomUnsolvedRequest();
 });
 taskElm.addEventListener("keydown", (e) => {
   let prevTaskVal = taskElm.value;
