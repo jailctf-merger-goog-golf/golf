@@ -31,7 +31,7 @@ app = Flask(__name__)
 
 
 def execute_task(task):
-    TIMEOUT = 10  # seconds
+    TIMEOUT = 20  # seconds
     try:
         proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True)
         if proc.returncode != 0:
