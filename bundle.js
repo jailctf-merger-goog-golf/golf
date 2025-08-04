@@ -26225,7 +26225,6 @@ setInterval(() => {
   if (websocketTiming == -1) {
     return;
   }
-  console.log(Math.abs(websocketTiming - Date.now() / 1e3));
   if (Math.abs(websocketTiming - Date.now() / 1e3) < 3) {
     return;
   }
