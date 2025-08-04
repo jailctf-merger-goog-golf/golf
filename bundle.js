@@ -26217,7 +26217,7 @@ setInterval(() => {
   if (!refreshAsapMessageGiven) {
     refreshAsapMessageGiven = true;
     setInterval(() => {
-      alert("No packet in 3 seconds! You could be disconnected. Please copy your sol to clipboard and refresh ASAP!");
+      alert("No packet in 3 seconds! You could be disconnected. Please copy your sol/annotations to clipboard and refresh ASAP!");
     }, 30 * 1e3);
   }
 }, 500);
