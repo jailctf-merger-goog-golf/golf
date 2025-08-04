@@ -26211,14 +26211,14 @@ setInterval(() => {
   if (websocketTiming == -1) {
     return;
   }
-  if (websocketTiming - Date.now() / 1e3 < 3) {
+  if (Math.abs(websocketTiming - Date.now() / 1e3) < 3) {
     return;
   }
   if (!refreshAsapMessageGiven) {
     refreshAsapMessageGiven = true;
     setInterval(() => {
       alert("No packet in 3 seconds! You could be disconnected. Please copy your sol/annotations to clipboard and refresh ASAP!");
-    }, 30 * 1e3);
+    }, 3e4);
   }
 }, 500);
 var solutionListen = EditorView.updateListener.of((v) => {

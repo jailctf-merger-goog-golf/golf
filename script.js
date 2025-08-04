@@ -239,12 +239,12 @@ setInterval(() => {
 
 setInterval(() => {
     if (websocketTiming == -1) { return; }
-    if (websocketTiming-Date.now()/1000 < 3) { return; }
+    if (Math.abs(websocketTiming - Date.now()/1000) < 3) { return; }
     if (!refreshAsapMessageGiven) {
         refreshAsapMessageGiven = true;
         setInterval(() => {
             alert("No packet in 3 seconds! You could be disconnected. Please copy your sol/annotations to clipboard and refresh ASAP!");
-        }, 30*1000)
+        }, 30000)
     }
 }, 500);
 
