@@ -253,7 +253,6 @@ setInterval(() => {
 
 setInterval(() => {
     if (websocketTiming == -1) { return; }
-    console.log(Math.abs(websocketTiming - Date.now()/1000))
     if (Math.abs(websocketTiming - Date.now()/1000) < 3) { return; }
     if (!refreshAsapMessageGiven) {
         refreshAsapMessageGiven = true;
