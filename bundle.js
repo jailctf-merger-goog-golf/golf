@@ -26018,6 +26018,7 @@ while (!SAFETY_KEY) {
 }
 SAFETY_KEY = SAFETY_KEY.trim();
 var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
+var refreshAsapMessageGiven = false;
 var websocketTiming = -1;
 var ignoreWebsocketUntil = -1;
 var openToReceiving = true;
@@ -26206,6 +26207,20 @@ setInterval(() => {
     console.log(e);
   }
 }, 50);
+setInterval(() => {
+  if (websocketTiming == -1) {
+    return;
+  }
+  if (websocketTiming - Date.now() / 1e3 < 3) {
+    return;
+  }
+  if (!refreshAsapMessageGiven) {
+    refreshAsapMessageGiven = true;
+    setInterval(() => {
+      alert("No packet in 3 seconds! You could be disconnected. Please copy your sol to clipboard and refresh ASAP!");
+    }, 30 * 1e3);
+  }
+}, 500);
 var solutionListen = EditorView.updateListener.of((v) => {
   if (v.docChanged) {
     websocketSendSolution();

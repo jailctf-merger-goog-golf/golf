@@ -16,6 +16,7 @@ let viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
 let lastViewingTaskNum = viewingTaskNum;
 
 // websockets stuff
+let refreshAsapMessageGiven = false;
 let websocketTiming = -1;
 let ignoreWebsocketUntil = -1;
 let openToReceiving = true;
@@ -235,6 +236,17 @@ setInterval(() => {
         }
     } catch (e) { console.log(e) }
 }, 50)
+
+setInterval(() => {
+    if (websocketTiming == -1) { return; }
+    if (websocketTiming-Date.now()/1000 < 3) { return; }
+    if (!refreshAsapMessageGiven) {
+        refreshAsapMessageGiven = true;
+        setInterval(() => {
+            alert("No packet in 3 seconds! You could be disconnected. Please copy your sol to clipboard and refresh ASAP!");
+        }, 30*1000)
+    }
+}, 500);
 
 let solutionListen = EditorView.updateListener.of((v) => {
     if (v.docChanged) {
