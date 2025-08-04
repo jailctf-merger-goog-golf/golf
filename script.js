@@ -19,6 +19,7 @@ let lastViewingTaskNum = viewingTaskNum;
 let refreshAsapMessageGiven = false;
 let websocketTiming = -1;
 let ignoreWebsocketUntil = -1;
+let receivedKnown = 0;
 let openToReceiving = true;
 let websocket = new WebSocket("wss://goog-golf.pyjail.club/ws")
 window.websocket = websocket;
@@ -43,6 +44,9 @@ websocket.onmessage = (event) => {
         }
         if (typeof data.annotations === "string" && annotationsView.state.doc.toString() !== data.annotations) {
             annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: data.annotations } })
+        }
+        if (typeof data.known === "number") {
+            receivedKnown = data.known;
         }
     }
 };
@@ -100,6 +104,7 @@ let rightButton = document.getElementById("right");
 let runButton = document.getElementById("run");
 let viewGenCode = document.getElementById("view-gen-code");
 let charCount = document.getElementById('char-count');
+let knownCount = document.getElementById('known-count');
 
 
 viewGenCode.addEventListener("click", (e) => {
@@ -116,6 +121,7 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
     }
     localStorage.setItem("goog-task", viewingTaskNum)
     taskElm.value = viewingTaskNum+[];
+    receivedKnown = 0;
     resultElm.style.backgroundImage = "";
     while (resultElm.firstChild) { resultElm.firstChild.remove(); }
     previewElm.innerHTML = `<img src="/view/${viewingTaskNum}" class="max-width">`
@@ -233,6 +239,14 @@ setInterval(() => {
             }
         } else {
             charCount.innerText = solutionView.state.doc.toString().length + " bytes"
+        }
+        knownCount.innerText = receivedKnown + " bytes"
+        charCount.classList.remove("char-count-bad")
+        charCount.classList.remove("char-count-good")
+        let ours = solutionView.state.doc.toString().length;
+        let theirs = receivedKnown;
+        if (ours !== 2500 && theirs !== 2500 && ours !== 0 && theirs !== 0) {
+            charCount.classList.add(ours > theirs ? 'char-count-bad' : 'char-count-good')
         }
     } catch (e) { console.log(e) }
 }, 50)

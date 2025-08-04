@@ -134,3 +134,22 @@ img {
     border: 2px solid #333;
     padding: 3px;
 }
+
+.char-count-good {
+    background-color: #63c695 !important;
+    border: 2px solid #9edb97 !important;
+}
+.char-count-bad {
+    background-color: #e58c8a !important;
+    border: 2px solid #fe6d73 !important;
+}
+
+#known-count {
+    font-size: 20px;
+    margin-left: 8px;
+    color: white;
+    background-color: #446;
+    font-family: consolas;
+    border: 2px solid #668;
+    padding: 3px;
+}

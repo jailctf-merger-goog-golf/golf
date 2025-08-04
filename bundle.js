@@ -26021,6 +26021,7 @@ var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
 var refreshAsapMessageGiven = false;
 var websocketTiming = -1;
 var ignoreWebsocketUntil = -1;
+var receivedKnown = 0;
 var openToReceiving = true;
 var websocket = new WebSocket("wss://goog-golf.pyjail.club/ws");
 window.websocket = websocket;
@@ -26045,6 +26046,9 @@ websocket.onmessage = (event) => {
     }
     if (typeof data.annotations === "string" && annotationsView.state.doc.toString() !== data.annotations) {
       annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: data.annotations } });
+    }
+    if (typeof data.known === "number") {
+      receivedKnown = data.known;
     }
   }
 };
@@ -26093,6 +26097,7 @@ var rightButton = document.getElementById("right");
 var runButton = document.getElementById("run");
 var viewGenCode = document.getElementById("view-gen-code");
 var charCount = document.getElementById("char-count");
+var knownCount = document.getElementById("known-count");
 viewGenCode.addEventListener("click", (e) => {
   window.open(`https://github.com/google/ARC-GEN/blob/main/tasks/training/task${String(viewingTaskNum).padStart(3, "0")}.py`);
 });
@@ -26105,6 +26110,7 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
   }
   localStorage.setItem("goog-task", viewingTaskNum);
   taskElm.value = viewingTaskNum + [];
+  receivedKnown = 0;
   resultElm.style.backgroundImage = "";
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
@@ -26202,6 +26208,14 @@ setInterval(() => {
       }
     } else {
       charCount.innerText = solutionView.state.doc.toString().length + " bytes";
+    }
+    knownCount.innerText = receivedKnown + " bytes";
+    charCount.classList.remove("char-count-bad");
+    charCount.classList.remove("char-count-good");
+    let ours = solutionView.state.doc.toString().length;
+    let theirs = receivedKnown;
+    if (ours !== 2500 && theirs !== 2500 && ours !== 0 && theirs !== 0) {
+      charCount.classList.add(ours > theirs ? "char-count-bad" : "char-count-good");
     }
   } catch (e) {
     console.log(e);
