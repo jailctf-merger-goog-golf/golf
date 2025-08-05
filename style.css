@@ -153,6 +153,17 @@ img {
     border: 2px solid #668;
     padding: 3px;
 }
+.editor-buttons {
+    position: absolute;
+    left: 0px;
+    bottom: -40px;
+}
+.pos-relative {
+    position: relative;
+}
+#copy-sol, #paste-sol {
+    margin-left: 8px;
+}
 
 #copy-testcase-buttons-outer {
     position: absolute;
@@ -177,7 +188,7 @@ img {
     justify-content: start;
 }
 
-.copy-testcase-button {
+.fancy-button {
     cursor: pointer;
     font-size: 20px;
     color: white;
@@ -191,12 +202,12 @@ img {
     transition: 0.6s;
     transition-property: background-color, border;
 }
-.copy-testcase-button:hover {
+.fancy-button:hover {
     border: 2px solid #a0dfa7;
     background-color: #58917a;
     transition: none;
 }
-.copy-testcase-button:active {
+.fancy-button:active {
     border: 2px solid #6daedb;
     background-color: #1d70a2;
     transition: none;

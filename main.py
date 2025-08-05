@@ -33,7 +33,7 @@ app = Flask(__name__)
 def execute_task(task):
     TIMEOUT = 20  # seconds
     try:
-        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True)
+        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True, encoding='latin-1')
         if proc.returncode != 0:
             status_code = 500
             output = proc.stderr
@@ -109,7 +109,8 @@ def run(task):
     os.makedirs("working/task_with_imports", exist_ok=True)
     fpath = f"./sols/task{task:03d}.py"
     with open(fpath, 'wb') as f:
-        data = request.data.replace(b'\x0d\x0a', b'\x0a')
+        data = bytes.fromhex(request.data.decode()).replace(b'\x0d\x0a', b'\x0a')
+        print(data)
         f.write(data)
 
     output, status_code = execute_task(task)

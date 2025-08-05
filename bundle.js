@@ -26028,7 +26028,7 @@ window.websocket = websocket;
 websocket.onmessage = (event) => {
   let data = JSON.parse(event.data);
   if (data.type === "error") {
-    alert("websocket error:", data.error_msg);
+    alert("websocket error: " + data.error_msg);
   }
   if (data.type == "set-listen-done") {
     openToReceiving = true;
@@ -26070,8 +26070,8 @@ var websocketSendAnnotations = () => {
     }));
   }
 };
-var websocketSendSolution = () => {
-  if (solutionView.hasFocus) {
+var websocketSendSolution = (force = false) => {
+  if (solutionView.hasFocus || force) {
     ignoreWebsocketUntil = websocketTiming + 0.5;
     websocket.send(JSON.stringify({
       "safety_key": SAFETY_KEY,
@@ -26100,8 +26100,31 @@ var charCount = document.getElementById("char-count");
 var knownCount = document.getElementById("known-count");
 var copyTestcaseButtons = document.getElementById("copy-testcase-buttons");
 var copyTestcaseButtonsLabel = document.getElementById("copy-testcase-buttons-label");
+var copySol = document.getElementById("copy-sol");
+var pasteSol = document.getElementById("paste-sol");
 viewGenCode.addEventListener("click", (e) => {
   window.open(`https://github.com/google/ARC-GEN/blob/main/tasks/training/task${String(viewingTaskNum).padStart(3, "0")}.py`);
+});
+copySol.addEventListener("click", async (e) => {
+  window.navigator.clipboard.writeText([...solutionView.state.doc.toString()].map((q) => q.charCodeAt(0).toString(16).padStart(2, "0")).join(""));
+  alert("Copied");
+});
+pasteSol.addEventListener("click", async (e) => {
+  let inp = await window.navigator.clipboard.readText();
+  if (![...inp.replaceAll(/\s/g, "")].every((q) => "0123456789abcdef".includes(q))) {
+    alert("not all hex!!! fail");
+    return;
+  }
+  function hexToBytes(hex) {
+    let bytes = "";
+    for (let c = 0; c < hex.length; c += 2)
+      bytes += String.fromCharCode(parseInt(hex.substr(c, 2), 16));
+    return bytes;
+  }
+  inp = hexToBytes(inp);
+  solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } });
+  ignoreWebsocketUntil = websocketTiming + 0.5;
+  websocketSendSolution(true);
 });
 var updateEverythingAccordingToViewingTaskNum = async () => {
   while (copyTestcaseButtons.firstChild) {
@@ -26127,7 +26150,7 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
     let copiedToClipboardTimeout = void 0;
     let createTestcaseButton = (s, casefn) => {
       let elm = document.createElement("div");
-      elm.classList.add("copy-testcase-button");
+      elm.classList.add("fancy-button");
       elm.innerText = s;
       elm.addEventListener("mouseover", () => {
         if (copiedToClipboardTimeout === void 0) {
@@ -26189,7 +26212,7 @@ var runTask = async () => {
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
   }
-  let resp = await fetch(`/run/${viewingTaskNum}`, { method: "POST", body: solutionView.state.doc.toString() });
+  let resp = await fetch(`/run/${viewingTaskNum}`, { method: "POST", body: [...solutionView.state.doc.toString()].map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join("") });
   let text = await resp.text();
   if (resp.status != 200) {
     let newElm2 = document.createElement("p");

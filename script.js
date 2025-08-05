@@ -26,7 +26,7 @@ window.websocket = websocket;
 websocket.onmessage = (event) => {
     let data = JSON.parse(event.data);
     if (data.type === "error") {
-        alert("websocket error:", data.error_msg)
+        alert("websocket error: " + data.error_msg)
     }
     if (data.type == "set-listen-done") {
         openToReceiving = true;
@@ -68,8 +68,8 @@ let websocketSendAnnotations = () => {
         }))
     }
 }
-let websocketSendSolution = () => {
-    if (solutionView.hasFocus) {
+let websocketSendSolution = (force=false) => {
+    if (solutionView.hasFocus || force) {
         ignoreWebsocketUntil = websocketTiming+0.5;  // assume latency is 0.5 seconds at most
         websocket.send(JSON.stringify({
             "safety_key": SAFETY_KEY,
@@ -107,10 +107,36 @@ let charCount = document.getElementById('char-count');
 let knownCount = document.getElementById('known-count');
 let copyTestcaseButtons = document.getElementById('copy-testcase-buttons');
 let copyTestcaseButtonsLabel = document.getElementById('copy-testcase-buttons-label');
+let copySol = document.getElementById('copy-sol')
+let pasteSol = document.getElementById('paste-sol')
 
 
 viewGenCode.addEventListener("click", (e) => {
     window.open(`https://github.com/google/ARC-GEN/blob/main/tasks/training/task${String(viewingTaskNum).padStart(3,'0')}.py`)
+})
+
+copySol.addEventListener('click', async (e) => {
+    window.navigator.clipboard.writeText([...solutionView.state.doc.toString()].map(q => q.charCodeAt(0).toString(16).padStart(2, '0')).join(""));
+    alert("Copied")
+})
+
+
+pasteSol.addEventListener('click', async (e) => {
+    let inp = await window.navigator.clipboard.readText();
+    if (![...inp.replaceAll(/\s/g, '')].every(q => "0123456789abcdef".includes(q))) {
+        alert("not all hex!!! fail");
+        return;
+    }
+    function hexToBytes(hex) {
+        let bytes = "";
+        for (let c = 0; c < hex.length; c += 2)
+            bytes += (String.fromCharCode(parseInt(hex.substr(c, 2), 16)));
+        return bytes;
+    }
+    inp = hexToBytes(inp);
+    solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } })
+    ignoreWebsocketUntil = websocketTiming+0.5;
+    websocketSendSolution(true);
 })
 
 
@@ -136,7 +162,7 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
         let copiedToClipboardTimeout = undefined;
         let createTestcaseButton = (s, casefn) => {
             let elm = document.createElement("div")
-            elm.classList.add("copy-testcase-button");
+            elm.classList.add("fancy-button");
             elm.innerText = s;
             elm.addEventListener("mouseover", () => {
                 if (copiedToClipboardTimeout === undefined) {
@@ -194,7 +220,7 @@ let runTask = async () => {
     resultElm.style.backgroundImage = "";
     while (resultElm.firstChild) { resultElm.firstChild.remove(); }
 
-    let resp = await fetch(`/run/${viewingTaskNum}`, {method: "POST", body: solutionView.state.doc.toString()})
+    let resp = await fetch(`/run/${viewingTaskNum}`, {method: "POST", body: [...solutionView.state.doc.toString()].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join("")})
     let text = await resp.text();
 
     // everything below is showing results
