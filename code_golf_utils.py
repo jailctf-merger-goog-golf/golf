@@ -237,8 +237,8 @@ def verify_program(task_num, examples):
 
     def verify(example_subset):
         nonlocal has_printed_first_err
-        right, wrong, expected = 0, 0, None
-        for example in example_subset:
+        right, wrong, expected, index = 0, 0, None, -1
+        for index, example in example_subset:
             example_copy = copy.deepcopy(example)
             try:
                 if program(example_copy["input"]) == example_copy["output"]:
@@ -253,10 +253,19 @@ def verify_program(task_num, examples):
                     traceback.print_exc(file=sys.stdout)
                 has_printed_first_err = True
                 wrong += 1
-        return right, wrong, expected
+        return right, wrong, expected, index
 
-    arc_agi_right, arc_agi_wrong, arc_agi_expected = verify(examples["train"] + examples["test"])
-    arc_gen_right, arc_gen_wrong, arc_gen_expected = verify(examples["arc-gen"])
+    train_test_examples = []
+    i=0
+    for ex in examples["train"] + examples["test"]:
+        train_test_examples.append((i, ex))
+        i += 1
+    gen_examples = []
+    for ex in examples["arc-gen"]:
+        gen_examples.append((i, ex))
+        i += 1
+    arc_agi_right, arc_agi_wrong, arc_agi_expected, agi_index = verify(train_test_examples)
+    arc_gen_right, arc_gen_wrong, arc_gen_expected, gen_index = verify(gen_examples)
     print(f"Results on ARC-AGI exaples: {arc_agi_right} pass, {arc_agi_wrong} fail")
     print(f"Results on ARC-GEN exaples: {arc_gen_right} pass, {arc_gen_wrong} fail")
     print()
@@ -267,6 +276,8 @@ def verify_program(task_num, examples):
     else:
         print("Your code IS NOT ready for submission.")
         expected = arc_agi_expected if arc_agi_expected else arc_gen_expected
+        index = max(agi_index, gen_index)
+        print(f"Your code failed on test case #{index+1}")
         if not expected:
             from PIL import Image, ImageDraw
 

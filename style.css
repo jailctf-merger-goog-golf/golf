@@ -180,21 +180,24 @@ img {
 .copy-testcase-button {
     cursor: pointer;
     font-size: 20px;
-    width: 23px;
     color: white;
     font-family: consolas;
-    padding: 3px;
+    padding: 3px 10px 3px 10px;
     margin-left: 3px;
     text-align: center;
     user-select: none;
     border: 2px solid #7fb685;
     background-color: #426a5a;
+    transition: 0.6s;
+    transition-property: background-color, border;
 }
 .copy-testcase-button:hover {
     border: 2px solid #a0dfa7;
     background-color: #58917a;
+    transition: none;
 }
 .copy-testcase-button:active {
     border: 2px solid #6daedb;
     background-color: #1d70a2;
+    transition: none;
 }

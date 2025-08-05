@@ -26125,7 +26125,7 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
   if (resp.status == 200) {
     let info = await resp.json();
     let copiedToClipboardTimeout = void 0;
-    let createTestcaseButton = (s, test) => {
+    let createTestcaseButton = (s, casefn) => {
       let elm = document.createElement("div");
       elm.classList.add("copy-testcase-button");
       elm.innerText = s;
@@ -26140,6 +26140,15 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
         }
       });
       elm.addEventListener("click", (e) => {
+        let test = casefn();
+        if (test === void 0) {
+          copyTestcaseButtonsLabel.innerText = "Failure";
+          copiedToClipboardTimeout = setTimeout(() => {
+            copiedToClipboardTimeout = void 0;
+            copyTestcaseButtonsLabel.innerText = "Copy test case:";
+          }, 1e3);
+          return document.createTextNode("");
+        }
         try {
           let arr = e.shiftKey ? test.output : test.input;
           navigator.clipboard.writeText(JSON.stringify(arr).replaceAll(",", ", "));
@@ -26150,14 +26159,29 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
         copiedToClipboardTimeout = setTimeout(() => {
           copiedToClipboardTimeout = void 0;
           copyTestcaseButtonsLabel.innerText = "Copy test case:";
-        }, 500);
+        }, 1e3);
       });
       return elm;
     };
     let tests = info.train.concat(info.test);
-    for (let i = 0; i < tests.length; i++) {
-      copyTestcaseButtons.appendChild(createTestcaseButton(String(i + 1), tests[i]));
+    let allTests = tests.concat(info["arc-gen"]);
+    while (copyTestcaseButtons.firstChild) {
+      copyTestcaseButtons.firstChild.remove();
     }
+    for (let i = 0; i < tests.length; i++) {
+      copyTestcaseButtons.appendChild(createTestcaseButton(String(i + 1), () => tests[i]));
+    }
+    copyTestcaseButtons.appendChild(createTestcaseButton("N", () => {
+      let n = parseInt((prompt("N=?") ?? "X").replaceAll(/[^0-9]/g, ""));
+      if (isNaN(n) || !isFinite(n) || n > allTests.length || n < 1) {
+        return;
+      }
+      return allTests[n - 1];
+    }));
+    copyTestcaseButtons.appendChild(createTestcaseButton("Random", () => {
+      let n = Math.floor(Math.random() * allTests.length);
+      return allTests[n];
+    }));
   }
 };
 var runTask = async () => {

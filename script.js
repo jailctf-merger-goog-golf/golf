@@ -134,7 +134,7 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
     if (resp.status == 200) {
         let info = await resp.json();
         let copiedToClipboardTimeout = undefined;
-        let createTestcaseButton = (s, test) => {
+        let createTestcaseButton = (s, casefn) => {
             let elm = document.createElement("div")
             elm.classList.add("copy-testcase-button");
             elm.innerText = s;
@@ -149,6 +149,15 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
                 }
             })
             elm.addEventListener("click", (e) => {
+                let test = casefn();
+                if (test === undefined) {
+                    copyTestcaseButtonsLabel.innerText = "Failure"
+                    copiedToClipboardTimeout = setTimeout(() => {
+                        copiedToClipboardTimeout = undefined;
+                        copyTestcaseButtonsLabel.innerText = "Copy test case:"
+                    }, 1000)
+                    return document.createTextNode("");  // empty text is nothing hack
+                }
                 try {
                     let arr = e.shiftKey ? test.output : test.input;
                     navigator.clipboard.writeText(JSON.stringify(arr).replaceAll(",", ', '))
@@ -157,14 +166,27 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
                 copiedToClipboardTimeout = setTimeout(() => {
                     copiedToClipboardTimeout = undefined;
                     copyTestcaseButtonsLabel.innerText = "Copy test case:"
-                }, 500)
+                }, 1000)
             })
             return elm;
         }
         let tests = info.train.concat(info.test);
+        let allTests = tests.concat(info['arc-gen'])
+        while (copyTestcaseButtons.firstChild) { copyTestcaseButtons.firstChild.remove(); }
         for (let i=0; i<tests.length; i++) {
-            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), tests[i]))
+            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), () => tests[i]))
         }
+        copyTestcaseButtons.appendChild(createTestcaseButton("N", () => {
+            let n=parseInt((prompt("N=?") ?? "X").replaceAll(/[^0-9]/g, ''));
+            if (isNaN(n) || !isFinite(n) || n > allTests.length || n < 1) {
+                return;
+            }
+            return allTests[n-1];
+        }))
+        copyTestcaseButtons.appendChild(createTestcaseButton("Random", () => {
+            let n=Math.floor(Math.random()*allTests.length);
+            return allTests[n];
+        }))
     }
 }
 
