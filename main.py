@@ -84,6 +84,12 @@ def script():
 
 
 @auth_required
+@app.route('/consolas.ttf')
+def consolas():
+    return send_file("./consolas.ttf", mimetype="font/ttf")
+
+
+@auth_required
 @app.route('/working/<path:filepath>')
 def working(filepath):
     os.makedirs("working", exist_ok=True)

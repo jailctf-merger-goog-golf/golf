@@ -1,3 +1,9 @@
+@font-face {
+  font-family: myconsolas;
+  src: url(consolas.ttf), local(consolas), local(Fira Mono), local(DejaVu Sans Mono), local(Menlo), local(Liberation Mono), local(Monaco), local(Lucida Console);
+}
+
+
 body, html {
     margin: 0px;
     padding: 0px;
@@ -14,7 +20,7 @@ body, html {
 }
 
 p, h1, h2, h3, h4, h5, h6 {
-    font-family: Arial;
+    font-family: myconsolas;
     color: white;
 }
 
@@ -130,7 +136,7 @@ img {
     margin-left: 8px;
     color: white;
     background-color: #222;
-    font-family: consolas;
+    font-family: myconsolas;
     border: 2px solid #333;
     padding: 3px;
 }
@@ -149,7 +155,7 @@ img {
     margin-left: 8px;
     color: white;
     background-color: #446;
-    font-family: consolas;
+    font-family: myconsolas;
     border: 2px solid #668;
     padding: 3px;
 }
@@ -177,7 +183,7 @@ img {
     font-size: 20px;
     color: white;
     background-color: #446;
-    font-family: consolas;
+    font-family: myconsolas;
     border: 2px solid #668;
     padding: 3px;
     width: 18em;
@@ -192,7 +198,7 @@ img {
     cursor: pointer;
     font-size: 20px;
     color: white;
-    font-family: consolas;
+    font-family: myconsolas;
     padding: 3px 10px 3px 10px;
     margin-left: 3px;
     text-align: center;
