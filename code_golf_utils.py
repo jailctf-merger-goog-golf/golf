@@ -174,7 +174,10 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
             for c, cell in enumerate(row):
                 if isinstance(cell, list):
                     raise NotImplementedError("result not 2d list: " + str(output))
-                image[r + 2][offset + c + 1] = colors[cell]
+                try:
+                    image[r + 2][offset + c + 1] = colors[cell]
+                except (IndexError, TypeError) as e:
+                    raise NotImplementedError("bad color:" + repr(cell))
         offset += output_width + 4
     # Draw the image.
     fig = plt.figure()
