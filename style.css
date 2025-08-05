@@ -153,3 +153,48 @@ img {
     border: 2px solid #668;
     padding: 3px;
 }
+
+#copy-testcase-buttons-outer {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    justify-content: start;
+}
+
+#copy-testcase-buttons-label {
+    font-size: 20px;
+    color: white;
+    background-color: #446;
+    font-family: consolas;
+    border: 2px solid #668;
+    padding: 3px;
+    width: 18em;
+}
+
+#copy-testcase-buttons {
+    display: flex;
+    justify-content: start;
+}
+
+.copy-testcase-button {
+    cursor: pointer;
+    font-size: 20px;
+    width: 23px;
+    color: white;
+    font-family: consolas;
+    padding: 3px;
+    margin-left: 3px;
+    text-align: center;
+    user-select: none;
+    border: 2px solid #7fb685;
+    background-color: #426a5a;
+}
+.copy-testcase-button:hover {
+    border: 2px solid #a0dfa7;
+    background-color: #58917a;
+}
+.copy-testcase-button:active {
+    border: 2px solid #6daedb;
+    background-color: #1d70a2;
+}

@@ -90,6 +90,12 @@ def working(filepath):
     return send_from_directory("./working/", filepath, mimetype='image/png')
 
 
+@auth_required
+@app.route('/infos/<path:filepath>')
+def infos(filepath):
+    return send_from_directory("./infos/", filepath, mimetype='application/json')
+
+
 @app.route('/legend.png')
 def legend():
     return send_file("./legend.png", mimetype='image/png')

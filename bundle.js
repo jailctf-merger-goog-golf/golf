@@ -26098,10 +26098,15 @@ var runButton = document.getElementById("run");
 var viewGenCode = document.getElementById("view-gen-code");
 var charCount = document.getElementById("char-count");
 var knownCount = document.getElementById("known-count");
+var copyTestcaseButtons = document.getElementById("copy-testcase-buttons");
+var copyTestcaseButtonsLabel = document.getElementById("copy-testcase-buttons-label");
 viewGenCode.addEventListener("click", (e) => {
   window.open(`https://github.com/google/ARC-GEN/blob/main/tasks/training/task${String(viewingTaskNum).padStart(3, "0")}.py`);
 });
 var updateEverythingAccordingToViewingTaskNum = async () => {
+  while (copyTestcaseButtons.firstChild) {
+    copyTestcaseButtons.firstChild.remove();
+  }
   if (websocket.readyState !== WebSocket.CONNECTING) {
     annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: "" } });
     solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: "" } });
@@ -26116,6 +26121,44 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
     resultElm.firstChild.remove();
   }
   previewElm.innerHTML = `<img src="/view/${viewingTaskNum}" class="max-width">`;
+  let resp = await fetch(`/infos/task${String(viewingTaskNum).padStart(3, "0")}.json`);
+  if (resp.status == 200) {
+    let info = await resp.json();
+    let copiedToClipboardTimeout = void 0;
+    let createTestcaseButton = (s, test) => {
+      let elm = document.createElement("div");
+      elm.classList.add("copy-testcase-button");
+      elm.innerText = s;
+      elm.addEventListener("mouseover", () => {
+        if (copiedToClipboardTimeout === void 0) {
+          copyTestcaseButtonsLabel.innerText = "(shift to copy test case output)";
+        }
+      });
+      elm.addEventListener("mouseout", () => {
+        if (copiedToClipboardTimeout === void 0) {
+          copyTestcaseButtonsLabel.innerText = "Copy test case:";
+        }
+      });
+      elm.addEventListener("click", (e) => {
+        try {
+          let arr = e.shiftKey ? test.output : test.input;
+          navigator.clipboard.writeText(JSON.stringify(arr).replaceAll(",", ", "));
+        } catch (e2) {
+          alert(String(e2));
+        }
+        copyTestcaseButtonsLabel.innerText = "Copied!";
+        copiedToClipboardTimeout = setTimeout(() => {
+          copiedToClipboardTimeout = void 0;
+          copyTestcaseButtonsLabel.innerText = "Copy test case:";
+        }, 500);
+      });
+      return elm;
+    };
+    let tests = info.train.concat(info.test);
+    for (let i = 0; i < tests.length; i++) {
+      copyTestcaseButtons.appendChild(createTestcaseButton(String(i + 1), tests[i]));
+    }
+  }
 };
 var runTask = async () => {
   resultElm.style.backgroundImage = "";

@@ -105,6 +105,8 @@ let runButton = document.getElementById("run");
 let viewGenCode = document.getElementById("view-gen-code");
 let charCount = document.getElementById('char-count');
 let knownCount = document.getElementById('known-count');
+let copyTestcaseButtons = document.getElementById('copy-testcase-buttons');
+let copyTestcaseButtonsLabel = document.getElementById('copy-testcase-buttons-label');
 
 
 viewGenCode.addEventListener("click", (e) => {
@@ -113,6 +115,8 @@ viewGenCode.addEventListener("click", (e) => {
 
 
 let updateEverythingAccordingToViewingTaskNum = async () => {
+    while (copyTestcaseButtons.firstChild) { copyTestcaseButtons.firstChild.remove(); }
+
     if (websocket.readyState !== WebSocket.CONNECTING) {
         annotationsView.dispatch({ changes: { from: 0, to: annotationsView.state.doc.length, insert: "" } })
         solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: "" } })
@@ -125,6 +129,43 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
     resultElm.style.backgroundImage = "";
     while (resultElm.firstChild) { resultElm.firstChild.remove(); }
     previewElm.innerHTML = `<img src="/view/${viewingTaskNum}" class="max-width">`
+
+    let resp = await fetch(`/infos/task${String(viewingTaskNum).padStart(3, '0')}.json`)
+    if (resp.status == 200) {
+        let info = await resp.json();
+        let copiedToClipboardTimeout = undefined;
+        let createTestcaseButton = (s, test) => {
+            let elm = document.createElement("div")
+            elm.classList.add("copy-testcase-button");
+            elm.innerText = s;
+            elm.addEventListener("mouseover", () => {
+                if (copiedToClipboardTimeout === undefined) {
+                    copyTestcaseButtonsLabel.innerText = "(shift to copy test case output)"
+                }
+            });
+            elm.addEventListener("mouseout", () => {
+                if (copiedToClipboardTimeout === undefined) {
+                    copyTestcaseButtonsLabel.innerText = "Copy test case:"
+                }
+            })
+            elm.addEventListener("click", (e) => {
+                try {
+                    let arr = e.shiftKey ? test.output : test.input;
+                    navigator.clipboard.writeText(JSON.stringify(arr).replaceAll(",", ', '))
+                } catch (e) { alert(String(e)) }
+                copyTestcaseButtonsLabel.innerText = "Copied!"
+                copiedToClipboardTimeout = setTimeout(() => {
+                    copiedToClipboardTimeout = undefined;
+                    copyTestcaseButtonsLabel.innerText = "Copy test case:"
+                }, 500)
+            })
+            return elm;
+        }
+        let tests = info.train.concat(info.test);
+        for (let i=0; i<tests.length; i++) {
+            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), tests[i]))
+        }
+    }
 }
 
 let runTask = async () => {
