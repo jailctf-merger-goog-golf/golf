@@ -204,12 +204,12 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
 def verify_program(task_num, examples):
     task_name, task_path = f"task_with_imports{task_num:03d}", f"./sols/task{task_num:03d}.py"
     module_path = f"./working/task_with_imports/task_with_imports{task_num:03d}.py"
-    with open(task_path, "r") as file:
+    with open(task_path, "rb") as file:
         file_content = file.read()
         # if "import" in file_content:
         #     print("Error: Imports are not permitted")
         #     return
-    with open(module_path, "w") as file:
+    with open(module_path, "wb") as file:
         # for library in libraries:
         #     file.write(f"from {library} import *\n")
         file.write(file_content)
