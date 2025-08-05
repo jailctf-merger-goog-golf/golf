@@ -178,7 +178,7 @@ class CustomUnparser(NodeVisitor):
         with self.require_parens(_Precedence.TUPLE, node):
             self.set_precedence(_Precedence.ATOM, node.target, node.value)
             self.traverse(node.target)
-            self.write(" := ")
+            self.write(":=")
             self.traverse(node.value)
 
     def visit_Import(self, node):
