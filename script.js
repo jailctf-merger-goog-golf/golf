@@ -352,10 +352,13 @@ randomUnsolved.addEventListener('click', async (e) => {
 })
 
 
+let prevTaskVal;
+let lastNonEmptyTaskVal;
 taskElm.addEventListener("keydown", (e) => {
-    let prevTaskVal = taskElm.value;
-
     setTimeout(() => {
+        if (prevTaskVal === taskElm.value) {
+            return;  // avoid flicker
+        }
         if (!parseInt(taskElm.value)) {
             return;
         }
@@ -366,8 +369,21 @@ taskElm.addEventListener("keydown", (e) => {
             viewingTaskNum = Math.min(Math.max(parseInt(taskElm.value), 1), 400)
         }
         updateEverythingAccordingToViewingTaskNum()
-    }, 20)
+
+        prevTaskVal = taskElm.value;
+    }, 3)
 })
+taskElm.addEventListener("blur", () => {
+    if (taskElm.value === "") {
+        taskElm.value = Math.floor(lastNonEmptyTaskVal*1);
+    }
+})
+setInterval(() => {
+    if (taskElm.value !== "") {
+        lastNonEmptyTaskVal=taskElm.value;
+    }
+}, 10)
+
 leftButton.addEventListener("click", (e) => {
     viewingTaskNum = (viewingTaskNum + 398) % 400 + 1
     updateEverythingAccordingToViewingTaskNum()
