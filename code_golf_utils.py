@@ -21,8 +21,10 @@ import os
 import sys
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 
+mpl.rcParams['text.antialiased'] = False
 os.makedirs("working", exist_ok=True)
 
 code_golf_dir = "./infos/"
@@ -156,26 +158,28 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
             raise NotImplementedError("result not 2d list: " + str(output))
         if not isinstance(output[0], list):
             raise NotImplementedError("result not 2d list: " + str(output))
-        width += len(grid[0]) + 1 + len(output[0]) + 4
+        if len(output[0])==0:
+            raise NotImplementedError("result is [[]] which is not ok")
+        width += len(grid[0]) + 1 + len(output[0]) + 6
         height = max(height, max(len(grid), len(output)) + 4)
     # Determine the contents of the image.
-    image = [[bgcolor for _ in range(width)] for _ in range(height)]
+    image = [[bgcolor for _ in range(width)] for _ in range(height+1)]
     for example in examples:
         grid, output = example["input"], example["output"]
         grid_width, output_width = len(grid[0]), len(output[0])
         for r, row in enumerate(grid):
             for c, cell in enumerate(row):
                 try:
-                    image[r + 2][offset + c + 1] = colors[cell]
+                    image[r + 3][offset + c + 1] = colors[cell]
                 except (IndexError, TypeError) as e:
                     raise NotImplementedError("bad color:" + repr(cell))
-        offset += grid_width + 1
+        offset += grid_width + 3
         for r, row in enumerate(output):
             for c, cell in enumerate(row):
                 if isinstance(cell, list):
                     raise NotImplementedError("result not 2d list: " + str(output))
                 try:
-                    image[r + 2][offset + c + 1] = colors[cell]
+                    image[r + 3][offset + c + 1] = colors[cell]
                 except (IndexError, TypeError) as e:
                     raise NotImplementedError("bad color:" + repr(cell))
         offset += output_width + 4
@@ -185,21 +189,41 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
     ax.imshow(np.array(image))
     # Draw the horizontal and vertical lines.
     offset = 1
+    fs=min([max(1.3, 20 / ((len(example['input'][0])+len(example['output'][0])) ** 0.6)) for example in examples])
     for example in examples:
         grid, output = example["input"], example["output"]
         grid_width, grid_height = len(grid[0]), len(grid)
         output_width, output_height = len(output[0]), len(output)
-        ax.hlines([r + 1.5 for r in range(grid_height + 1)],
-                  xmin=offset + 0.5, xmax=offset + grid_width + 0.5, color="black")
-        ax.vlines([offset + c + 0.5 for c in range(grid_width + 1)],
-                  ymin=1.5, ymax=grid_height + 1.5, color="black")
-        offset += grid_width + 1
-        ax.hlines([r + 1.5 for r in range(output_height + 1)],
-                  xmin=offset + 0.5, xmax=offset + output_width + 0.5, color="black")
-        ax.vlines([offset + c + 0.5 for c in range(output_width + 1)],
-                  ymin=1.5, ymax=output_height + 1.5, color="black")
+        grid_cell_size = min(grid_width+output_width, grid_height+output_height)
+        lw=1.3/(grid_cell_size ** 0.5)
+        # input
+        ax.hlines([r + 2.5 for r in range(grid_height + 1)],
+                  xmin=offset - 0.5, xmax=offset + grid_width + 0.5, linewidth=lw, color="black")
+        ax.vlines([offset + c + 0.5 for c in range(grid_width + 1)], linewidth=lw,
+                  ymin=1.5, ymax=grid_height + 2.5, color="black")
+        for x in range(grid_width):
+            ax.text(x + 0.69 + offset, 2.37, str(x % 10), color=(0, 0, 0), size=fs)
+            if x > 9:
+                ax.text(x + 0.69 + offset, 1.37, str(x // 10), color=(0, 0, 0), size=fs)
+        for y in range(grid_height):
+            ax.text(offset - 0.3 + [0,-0.4][y>9], y + 3.37, str(y), color=(0, 0, 0), size=fs)
+        offset += grid_width + 3
+
+        # output
+        ax.hlines([r + 2.5 for r in range(output_height + 1)],
+                  xmin=offset - 0.5, xmax=offset + output_width + 0.5, linewidth=lw, color="black")
+        ax.vlines([offset + c + 0.5 for c in range(output_width + 1)], linewidth=lw,
+                  ymin=1.5, ymax=output_height + 2.5, color="black")
+        for x in range(output_width):
+            ax.text(x + 0.69 + offset, 2.37, str(x % 10), color=(0, 0, 0), size=fs)
+            if x > 9:
+                ax.text(x + 0.69 + offset, 1.37, str(x // 10), color=(0, 0, 0), size=fs)
+        for y in range(output_height):
+            ax.text(offset - 0.3 + [0,-0.4][y>9], y + 3.37, str(y), color=(0, 0, 0), size=fs)
         offset += output_width + 2
-        ax.vlines([offset + 0.5], ymin=-0.5, ymax=height - 0.5, color="black")
+
+        # barrier
+        ax.vlines([offset + 0.5], ymin=-0.5, ymax=height + 0.5, color="black")
         offset += 2
     ax.set_xticks([])
     ax.set_yticks([])
