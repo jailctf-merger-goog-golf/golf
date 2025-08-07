@@ -8,3 +8,4 @@ default-sols/data
 legend.png
 .env
 sols/*
+compression

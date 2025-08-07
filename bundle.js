@@ -26102,6 +26102,72 @@ var copyTestcaseButtons = document.getElementById("copy-testcase-buttons");
 var copyTestcaseButtonsLabel = document.getElementById("copy-testcase-buttons-label");
 var copySol = document.getElementById("copy-sol");
 var pasteSol = document.getElementById("paste-sol");
+var openCompressionDialog = document.getElementById("open-compression-dialog");
+var compressionDialog = document.getElementById("compression");
+var compressionUpdate = document.getElementById("compression-update");
+var compressionLabel = document.getElementById("compression-label");
+var compressionError = document.getElementById("compression-error");
+var compressionOptions = document.getElementById("compression-options");
+var compressionDialogClose = document.getElementById("compression-close");
+var updateCompressionDialogOptions = async () => {
+  let resp = await fetch("/compression/list");
+  if (resp.status != 200) {
+    alert(await resp.text());
+    return;
+  }
+  let options = await resp.json();
+  while (compressionOptions.firstChild) {
+    compressionOptions.firstChild.remove();
+  }
+  for (let option of options) {
+    let compOption = document.createElement("div");
+    compOption.classList.add("compression-option");
+    compOption.classList.add("fancy-button");
+    compOption.innerText = option;
+    compOption.addEventListener("click", async () => {
+      compressionError.innerText = "";
+      compressionLabel.innerText = "Compressing with program: " + option;
+      let resp2 = await fetch(
+        "/compression/compress/" + option,
+        { method: "POST", body: [...solutionView.state.doc.toString()].map((q) => q.charCodeAt(0).toString(16).padStart(2, "0")).join("") }
+      );
+      if (resp2.status !== 200) {
+        compressionError.innerText = "status: " + resp2.status + "\n" + await resp2.text();
+        compressionLabel.innerText = "Compression";
+        return;
+      }
+      let data2 = await resp2.json();
+      function hexToBytes(hex) {
+        let bytes = "";
+        for (let c = 0; c < hex.length; c += 2)
+          bytes += String.fromCharCode(parseInt(hex.substr(c, 2), 16));
+        return bytes;
+      }
+      let inp = hexToBytes(data2.stdout);
+      solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } });
+      ignoreWebsocketUntil = websocketTiming + 0.7;
+      websocketSendSolution(true);
+      compressionError.innerText = data2.stderr;
+      compressionLabel.innerText = "Compression";
+    });
+    compressionOptions.appendChild(compOption);
+  }
+};
+openCompressionDialog.addEventListener("click", (e) => {
+  compressionDialog.showModal();
+  compressionError.innerText = "";
+  compressionLabel.innerText = "Compression";
+});
+compressionDialogClose.addEventListener("click", (e) => {
+  compressionDialog.close();
+});
+compressionUpdate.addEventListener("click", async (e) => {
+  compressionLabel.innerText = "Updating...";
+  let resp = await fetch("/compression/update", { "method": "POST" });
+  compressionLabel.innerText = "Compression";
+  alert(await resp.text());
+  updateCompressionDialogOptions();
+});
 viewGenCode.addEventListener("click", (e) => {
   window.open(`https://github.com/google/ARC-GEN/blob/main/tasks/training/task${String(viewingTaskNum).padStart(3, "0")}.py`);
 });
@@ -26350,3 +26416,4 @@ window.theme = theme2;
 window.solutionView = solutionView;
 window.annotationsView = annotationsView;
 updateEverythingAccordingToViewingTaskNum();
+updateCompressionDialogOptions();

@@ -55,6 +55,7 @@ p, h1, h2, h3, h4, h5, h6 {
 
 button, input {
     font-size: 18px;
+    outline: none;
 }
 
 #editor {
@@ -167,7 +168,7 @@ img {
 .pos-relative {
     position: relative;
 }
-#copy-sol, #paste-sol {
+#copy-sol, #paste-sol, #open-compression-dialog {
     margin-left: 8px;
 }
 
@@ -217,4 +218,75 @@ img {
     border: 2px solid #6daedb;
     background-color: #1d70a2;
     transition: none;
+}
+
+#compression-close {
+    width: 1em;
+}
+
+#compression-update {
+    width: 12em;
+}
+
+.compression-header {
+    margin-bottom: 12px;
+    justify-content: space-between;
+}
+
+.compression-option {
+    text-align: left;
+}
+
+.compression-options {
+    overflow: auto;
+}
+
+.compression-error-outer {
+    max-height: 40vh;
+    width: 100%;
+    background-color: #aaa;
+    min-height: 2px;
+    margin-bottom: 14px;
+}
+
+#compression-error {
+    max-height: 40vh;
+    overflow: auto;
+}
+
+#compression-label {
+    font-size: 24px;
+    margin: 0px;
+}
+
+:modal {
+    background: #11111555;
+    outline: none;
+    border: 1px solid transparent;
+    width: calc(50vw - 50px);
+    border-image: linear-gradient(-40deg,#4fdc4a 20%,#3fdad8 50%,#2fc9e2 70%,#1c7fee 100%);
+    border-image-slice: 1;
+    animation: open 0.2s linear forwards;
+    overflow: hidden;
+}
+
+dialog {
+  height: 0px;
+
+  &[open] {
+    height: calc(90vh - 50px);
+  }
+}
+
+dialog::backdrop {
+    background: none;
+}
+
+@keyframes open {
+  0%{
+    height: 0px;
+  }
+  100%{
+    height: calc(90vh - 50px);
+  }
 }

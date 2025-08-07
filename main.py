@@ -1,6 +1,10 @@
+import io
+
 from flask import Flask, send_from_directory, send_file, request, session, redirect
 from flask import request
 import subprocess
+import tempfile
+from json import dumps
 import os
 from random import choice
 from dotenv import load_dotenv
@@ -17,6 +21,13 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if SECRET_KEY is None:
     print("NO \"SECRET_KEY\" IN .env ALERT ALERT BAD BAD SET IT NOW")
     exit(1)
+
+
+print("todo use python executable env var for running and not just compression")  # todo
+PYTHON_EXECUTABLE = os.getenv('PYTHON_EXECUTABLE')
+if PYTHON_EXECUTABLE is None:
+    print("using default python executable python3")
+    PYTHON_EXECUTABLE = "python3"
 
 
 def auth_required(func):
@@ -107,6 +118,11 @@ def legend():
     return send_file("./legend.png", mimetype='image/png')
 
 
+@app.route('/favicon.ico')
+def fav():
+    return send_file("./favicon.ico", mimetype='image/ico')
+
+
 @auth_required
 @app.post('/run/<int:task>')
 def run(task):
@@ -141,6 +157,75 @@ def random_chal():
     if len(ok) == 0:
         return 'uhhhh all completed !?!?!?! good job future me', 500
     return str(choice(list(ok))), 200
+
+
+@auth_required
+@app.get('/compression/list')
+def list_compression():
+    if not os.path.isdir("compression"):
+        os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
+    return dumps(os.listdir("compression/options")), 200
+
+
+@auth_required
+@app.post('/compression/compress/<path:filepath>')
+def do_compression(filepath):
+    if not os.path.isdir("compression"):
+        os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
+
+    TIMEOUT = 12  # seconds
+    stderr = "stderr"
+    stdout = "stdout"
+    data = request.data.decode()
+    with tempfile.NamedTemporaryFile(mode='wb', suffix=".py", delete=False) as f:
+        f.write(bytes.fromhex(data))
+        f.close()
+        try:
+            proc = subprocess.run([PYTHON_EXECUTABLE, 'compression/options/'+filepath, f.name],
+                                  capture_output=True, timeout=TIMEOUT, text=True, encoding='latin-1')
+            if proc.returncode != 0:
+                status_code = 500
+                stderr = proc.stderr
+                stdout = data
+            else:
+                status_code = 200
+                stderr = proc.stderr
+                stdout = proc.stdout
+        except subprocess.TimeoutExpired:
+            status_code = 501
+            stderr = f"Compression timed out after {TIMEOUT} seconds."
+            stdout = data
+        except Exception as e:
+            import traceback
+            status_code = 502
+            stderr = traceback.format_exc()
+            stdout = data
+
+    return dumps({"stderr": stderr, "stdout": stdout.removesuffix("\n\u001b[0m")}), status_code
+
+
+@auth_required
+@app.post("/compression/update")
+def update_compression():
+    if not os.path.isdir("compression"):
+        os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
+    try:
+        proc = subprocess.run(['git', 'pull'],
+                              capture_output=True, timeout=10.0, text=True, encoding='latin-1', cwd="compression")
+        if proc.returncode != 0:
+            status_code = 500
+            output = proc.stderr
+        else:
+            status_code = 200
+            output = proc.stdout
+    except subprocess.TimeoutExpired:
+        status_code = 501
+        output = f"Clone timed out."
+    except Exception as e:
+        status_code = 502
+        output = repr(e)
+
+    return output, status_code
 
 
 if __name__ == '__main__':
