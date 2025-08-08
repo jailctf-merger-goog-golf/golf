@@ -26279,8 +26279,14 @@ var runTask = async () => {
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
   }
+  let loadingElm = document.createElement("code");
+  loadingElm.innerHTML = "<br>loading ...";
+  resultElm.appendChild(loadingElm);
   let resp = await fetch(`/run/${viewingTaskNum}`, { method: "POST", body: [...solutionView.state.doc.toString()].map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join("") });
   let text = await resp.text();
+  while (resultElm.firstChild) {
+    resultElm.firstChild.remove();
+  }
   if (resp.status != 200) {
     let newElm2 = document.createElement("p");
     if (resp.status == 500) {

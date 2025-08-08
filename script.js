@@ -291,8 +291,14 @@ let runTask = async () => {
     resultElm.style.backgroundImage = "";
     while (resultElm.firstChild) { resultElm.firstChild.remove(); }
 
+    let loadingElm = document.createElement("code");
+    loadingElm.innerHTML = "<br>loading ...";
+    resultElm.appendChild(loadingElm)
+
     let resp = await fetch(`/run/${viewingTaskNum}`, {method: "POST", body: [...solutionView.state.doc.toString()].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join("")})
     let text = await resp.text();
+
+    while (resultElm.firstChild) { resultElm.firstChild.remove(); }
 
     // everything below is showing results
     if (resp.status != 200) {
