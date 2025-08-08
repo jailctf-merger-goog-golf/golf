@@ -221,6 +221,7 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
     }
     localStorage.setItem("goog-task", viewingTaskNum)
     taskElm.value = viewingTaskNum+[];
+    prevTaskVal = taskElm.value;
     receivedKnown = 0;
     resultElm.style.backgroundImage = "";
     while (resultElm.firstChild) { resultElm.firstChild.remove(); }

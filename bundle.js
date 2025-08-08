@@ -26204,6 +26204,7 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
   }
   localStorage.setItem("goog-task", viewingTaskNum);
   taskElm.value = viewingTaskNum + [];
+  prevTaskVal = taskElm.value;
   receivedKnown = 0;
   resultElm.style.backgroundImage = "";
   while (resultElm.firstChild) {
@@ -26331,7 +26332,6 @@ taskElm.addEventListener("keydown", (e) => {
     if (!parseInt(taskElm.value)) {
       return;
     }
-    console.log([...Array(401).keys()].slice(1), parseInt(taskElm.value));
     if (![...Array(401).keys()].slice(1).includes(parseInt(taskElm.value))) {
       alert(`bad task value "${taskElm.value}"`);
       viewingTaskNum = parseInt(prevTaskVal);

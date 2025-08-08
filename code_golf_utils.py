@@ -170,18 +170,26 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
         for r, row in enumerate(grid):
             for c, cell in enumerate(row):
                 try:
-                    image[r + 3][offset + c + 1] = colors[cell]
-                except (IndexError, TypeError) as e:
+                    col=colors[cell]
+                except (IndexError, TypeError):
                     raise NotImplementedError("bad color:" + repr(cell))
+                try:
+                    image[r + 3][offset + c + 1] = col
+                except IndexError:
+                    print("IndexError when drawing pixels!")
         offset += grid_width + 3
         for r, row in enumerate(output):
             for c, cell in enumerate(row):
                 if isinstance(cell, list):
                     raise NotImplementedError("result not 2d list: " + str(output))
                 try:
-                    image[r + 3][offset + c + 1] = colors[cell]
+                    col=colors[cell]
                 except (IndexError, TypeError) as e:
                     raise NotImplementedError("bad color:" + repr(cell))
+                try:
+                    image[r + 3][offset + c + 1] = col
+                except IndexError:
+                    print("IndexError when drawing pixels!")
         offset += output_width + 4
     # Draw the image.
     fig = plt.figure()
