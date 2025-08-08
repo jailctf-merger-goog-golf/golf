@@ -298,8 +298,8 @@ def verify_program(task_num, examples):
         i += 1
     arc_agi_right, arc_agi_wrong, arc_agi_expected, agi_index = verify(train_test_examples)
     arc_gen_right, arc_gen_wrong, arc_gen_expected, gen_index = verify(gen_examples)
-    print(f"Results on ARC-AGI exaples: {arc_agi_right} pass, {arc_agi_wrong} fail")
-    print(f"Results on ARC-GEN exaples: {arc_gen_right} pass, {arc_gen_wrong} fail")
+    print(f"Results on ARC-AGI examples: {arc_agi_right} pass, {arc_agi_wrong} fail")
+    print(f"Results on ARC-GEN examples: {arc_gen_right} pass, {arc_gen_wrong} fail")
     print()
     if arc_agi_wrong + arc_gen_wrong == 0:
         task_length = os.path.getsize(task_path)
