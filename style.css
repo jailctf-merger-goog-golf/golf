@@ -41,6 +41,10 @@ p, h1, h2, h3, h4, h5, h6 {
     align-items: start;
 }
 
+.inline-flex {
+    display: inline-flex;
+}
+
 .justify-space-between {
     justify-content: space-between;
 }
@@ -50,12 +54,46 @@ p, h1, h2, h3, h4, h5, h6 {
 .buttons {
     padding: 5px;
     width: calc(100% - 10px);
+    align-items: center;
     gap: 5px;
 }
 
 button, input {
     font-size: 18px;
+    border-radius: 0px;
     outline: none;
+}
+
+input[type="checkbox"] {
+    font-family: myconsolas;
+    border-radius: 0px;
+    border: 2px solid #666688;
+    border-image-width: 0px;
+    margin: 0px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 2.2em;
+    height: 27px;
+    background-color: #444466;
+    color: white;
+    margin-left: 6px;
+}
+
+input[type="checkbox"]::before {
+    content: "20s";
+    width: 2em;
+    text-align: center;
+    display: inherit;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #63c695;
+    border-color: #9edb97;
+}
+
+input[type="checkbox"]:checked::before {
+    content: "90s";
 }
 
 #editor {
@@ -165,6 +203,12 @@ img {
     left: 0px;
     bottom: -40px;
 }
+.topleft-buttons-divider {
+    height: 30px;
+    width: 2px;
+    margin-left: 7px;
+    background-color: #aaa;
+}
 .pos-relative {
     position: relative;
 }
@@ -206,18 +250,18 @@ img {
     user-select: none;
     border: 2px solid #7fb685;
     background-color: #426a5a;
-    transition: 0.6s;
     transition-property: background-color, border;
 }
 .fancy-button:hover {
     border: 2px solid #a0dfa7;
     background-color: #58917a;
-    transition: none;
 }
 .fancy-button:active {
     border: 2px solid #6daedb;
     background-color: #1d70a2;
-    transition: none;
+}
+.fancy-button-compact {
+    padding: 0px 10px 0px 10px;
 }
 
 #tools-close {

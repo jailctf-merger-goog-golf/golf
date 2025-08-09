@@ -41,10 +41,10 @@ def auth_required(func):
 app = Flask(__name__)
 
 
-def execute_task(task):
-    TIMEOUT = 20  # seconds
+def execute_task(task, timeout):
+    print(timeout)
     try:
-        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=TIMEOUT, text=True, encoding='latin-1')
+        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=timeout, text=True, encoding='latin-1')
         if proc.returncode != 0:
             status_code = 500
             output = proc.stderr
@@ -53,7 +53,7 @@ def execute_task(task):
             output = proc.stdout
     except subprocess.TimeoutExpired:
         status_code = 501
-        output = f"Code timed out after {TIMEOUT} seconds."
+        output = f"Code timed out after {timeout} seconds."
     except Exception as e:
         status_code = 502
         output = repr(e)
@@ -135,7 +135,8 @@ def run(task):
         print(data)
         f.write(data)
 
-    output, status_code = execute_task(task)
+    timeout = 90 if request.headers.get('x-long-timeout', "false") == "true" else 20
+    output, status_code = execute_task(task, timeout)
     if len(request.data) == 0:
         os.remove(fpath)
     return output, status_code

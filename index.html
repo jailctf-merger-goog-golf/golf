@@ -30,20 +30,22 @@
     </div>
 
     <div class="buttons max-width justify-space-between flex-horizontal flex-align-start">
-        <div>
-            <button id="run">Run</button>
+        <div class="flex-horizontal topleft-buttons">
+            <div class="fancy-button fancy-button-compact inline-flex" id="run">Run</div>
+            <input type="checkbox" id="long-timeout" title="long timeout (90s)">
+            <div class="topleft-buttons-divider"></div>
             <code id="char-count">0 bytes</code>
             <code id="known-count">0 bytes</code>
         </div>
         <div>
-            <button id="random-unsolved">Random Unsolved</button>
-            <button id="download-sols-zip" onclick="alert('umm todo make functionality')">Download Solution Zip</button>
-            <button id="view-gen-code">View Gen Code</button>
+            <div class="fancy-button fancy-button-compact inline-flex" id="random-unsolved">Random Unsolved</div>
+            <div class="fancy-button fancy-button-compact inline-flex" id="download-sols-zip" onclick="alert('umm todo make functionality')">Download Solution Zip</div>
+            <div class="fancy-button fancy-button-compact inline-flex" id="view-gen-code">View Gen Code</div>
         </div>
         <div>
-            <button id="left"> < </button>
+            <div class="fancy-button fancy-button-compact inline-flex" id="left"> < </div>
             <input type="text" name="task" id="task">
-            <button id="right"> > </button>
+            <div class="fancy-button fancy-button-compact inline-flex" id="right"> > </div>
         </div>
     </div>
     <div class="flex-vertical max m38">

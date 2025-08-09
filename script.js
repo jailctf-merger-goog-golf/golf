@@ -95,6 +95,7 @@ import {oneDark} from "@codemirror/theme-one-dark"
 import {coolGlow} from 'thememirror';
 
 
+let longTimeout = document.getElementById('long-timeout');
 let randomUnsolved = document.getElementById('random-unsolved');
 let resultElm = document.getElementById("result");
 let taskElm = document.getElementById("task");
@@ -295,7 +296,10 @@ let runTask = async () => {
     loadingElm.innerHTML = "<br>loading ...";
     resultElm.appendChild(loadingElm)
 
-    let resp = await fetch(`/run/${viewingTaskNum}`, {method: "POST", body: [...solutionView.state.doc.toString()].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join("")})
+    let resp = await fetch(`/run/${viewingTaskNum}`, {
+        method: "POST", body: [...solutionView.state.doc.toString()].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(""),
+        headers: {"x-long-timeout": longTimeout.checked}
+    })
     let text = await resp.text();
 
     while (resultElm.firstChild) { resultElm.firstChild.remove(); }

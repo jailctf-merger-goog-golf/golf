@@ -26088,6 +26088,7 @@ var websocketSendRandomUnsolvedRequest = () => {
     "type": "random-unsolved"
   }));
 };
+var longTimeout = document.getElementById("long-timeout");
 var randomUnsolved = document.getElementById("random-unsolved");
 var resultElm = document.getElementById("result");
 var taskElm = document.getElementById("task");
@@ -26126,7 +26127,7 @@ var updateToolsDialogOptions = async () => {
     compOption.innerText = option;
     compOption.addEventListener("click", async () => {
       toolsError.innerText = "";
-      toolsLabel.innerText = "Inputting into program: " + option;
+      toolsLabel.innerText = "Running " + option;
       let resp2 = await fetch(
         "/tools/run/" + option,
         { method: "POST", body: [...solutionView.state.doc.toString()].map((q) => q.charCodeAt(0).toString(16).padStart(2, "0")).join("") }
@@ -26282,7 +26283,11 @@ var runTask = async () => {
   let loadingElm = document.createElement("code");
   loadingElm.innerHTML = "<br>loading ...";
   resultElm.appendChild(loadingElm);
-  let resp = await fetch(`/run/${viewingTaskNum}`, { method: "POST", body: [...solutionView.state.doc.toString()].map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join("") });
+  let resp = await fetch(`/run/${viewingTaskNum}`, {
+    method: "POST",
+    body: [...solutionView.state.doc.toString()].map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join(""),
+    headers: { "x-long-timeout": longTimeout.checked }
+  });
   let text = await resp.text();
   while (resultElm.firstChild) {
     resultElm.firstChild.remove();
