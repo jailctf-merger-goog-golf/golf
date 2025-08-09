@@ -168,7 +168,7 @@ img {
 .pos-relative {
     position: relative;
 }
-#copy-sol, #paste-sol, #open-compression-dialog {
+#copy-sol, #paste-sol, #open-tools-dialog {
     margin-left: 8px;
 }
 
@@ -220,28 +220,28 @@ img {
     transition: none;
 }
 
-#compression-close {
+#tools-close {
     width: 1em;
 }
 
-#compression-update {
+#tools-update {
     width: 12em;
 }
 
-.compression-header {
+.tools-header {
     margin-bottom: 12px;
     justify-content: space-between;
 }
 
-.compression-option {
+.tools-option {
     text-align: left;
 }
 
-.compression-options {
+.tools-options {
     overflow: auto;
 }
 
-.compression-error-outer {
+.tools-error-outer {
     max-height: 40vh;
     width: 100%;
     background-color: #aaa;
@@ -249,12 +249,12 @@ img {
     margin-bottom: 14px;
 }
 
-#compression-error {
+#tools-error {
     max-height: 40vh;
     overflow: auto;
 }
 
-#compression-label {
+#tools-label {
     font-size: 24px;
     margin: 0px;
 }

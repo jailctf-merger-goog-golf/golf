@@ -160,17 +160,17 @@ def random_chal():
 
 
 @auth_required
-@app.get('/compression/list')
-def list_compression():
+@app.get('/tools/list')
+def list_tools():
     if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
     return dumps(os.listdir("compression/options")), 200
 
 
 @auth_required
-@app.post('/compression/compress/<path:filepath>')
-def do_compression(filepath):
-    if not os.path.isdir("compression"):
+@app.post('/tools/run/<path:filepath>')
+def do_tool(filepath):
+    if not os.path.isdir("tools"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
 
     TIMEOUT = 12  # seconds
@@ -193,7 +193,7 @@ def do_compression(filepath):
                 stdout = proc.stdout
         except subprocess.TimeoutExpired:
             status_code = 501
-            stderr = f"Compression timed out after {TIMEOUT} seconds."
+            stderr = f"Tool timed out after {TIMEOUT} seconds."
             stdout = data
         except Exception as e:
             import traceback
@@ -205,8 +205,8 @@ def do_compression(filepath):
 
 
 @auth_required
-@app.post("/compression/update")
-def update_compression():
+@app.post("/tools/update")
+def update_tools():
     if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
     try:

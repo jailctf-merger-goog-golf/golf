@@ -109,37 +109,37 @@ let copyTestcaseButtons = document.getElementById('copy-testcase-buttons');
 let copyTestcaseButtonsLabel = document.getElementById('copy-testcase-buttons-label');
 let copySol = document.getElementById('copy-sol')
 let pasteSol = document.getElementById('paste-sol')
-let openCompressionDialog = document.getElementById('open-compression-dialog');
-let compressionDialog = document.getElementById('compression');
-let compressionUpdate = document.getElementById('compression-update');
-let compressionLabel = document.getElementById('compression-label');
-let compressionError = document.getElementById('compression-error');
-let compressionOptions = document.getElementById('compression-options');
-let compressionDialogClose = document.getElementById('compression-close');
+let openToolsDialog = document.getElementById('open-tools-dialog');
+let toolsDialog = document.getElementById('tools');
+let toolsUpdate = document.getElementById('tools-update');
+let toolsLabel = document.getElementById('tools-label');
+let toolsError = document.getElementById('tools-error');
+let toolsOptions = document.getElementById('tools-options');
+let toolsDialogClose = document.getElementById('tools-close');
 
 
-let updateCompressionDialogOptions = async () => {
-    let resp = await fetch("/compression/list")
+let updateToolsDialogOptions = async () => {
+    let resp = await fetch("/tools/list")
     if (resp.status != 200) {
         alert(await resp.text())
         return;
     }
     let options = await resp.json();
-    while (compressionOptions.firstChild) { compressionOptions.firstChild.remove(); }
+    while (toolsOptions.firstChild) { toolsOptions.firstChild.remove(); }
     for (let option of options) {
         let compOption = document.createElement("div");
-        compOption.classList.add("compression-option")
+        compOption.classList.add("tools-option")
         compOption.classList.add("fancy-button")
         compOption.innerText = option;
         compOption.addEventListener("click", async () => {
-            compressionError.innerText = '';
-            compressionLabel.innerText = 'Compressing with program: ' + option;
-            let resp2 = await fetch("/compression/compress/"+option,
+            toolsError.innerText = '';
+            toolsLabel.innerText = 'Running ' + option;
+            let resp2 = await fetch("/tools/run/"+option,
                 {method: "POST", body: [...solutionView.state.doc.toString()].map(q => q.charCodeAt(0).toString(16).padStart(2, '0')).join("")}
             )
             if (resp2.status !== 200) {
-                compressionError.innerText = "status: " + resp2.status + "\n" + await resp2.text();
-                compressionLabel.innerText = 'Compression';
+                toolsError.innerText = "status: " + resp2.status + "\n" + await resp2.text();
+                toolsLabel.innerText = 'Tools';
                 return;
             }
 
@@ -156,29 +156,29 @@ let updateCompressionDialogOptions = async () => {
             ignoreWebsocketUntil = websocketTiming+0.7;
             websocketSendSolution(true);
 
-            compressionError.innerText = data2.stderr;
-            compressionLabel.innerText = 'Compression';
+            toolsError.innerText = data2.stderr;
+            toolsLabel.innerText = 'Tools';
         });
-        compressionOptions.appendChild(compOption);
+        toolsOptions.appendChild(compOption);
     }
 }
 
-openCompressionDialog.addEventListener("click", (e) => {
-    compressionDialog.showModal();
-    compressionError.innerText = '';
-    compressionLabel.innerText = 'Compression';
+openToolsDialog.addEventListener("click", (e) => {
+    toolsDialog.showModal();
+    toolsError.innerText = '';
+    toolsLabel.innerText = 'Tools';
 })
 
-compressionDialogClose.addEventListener("click", (e) => {
-    compressionDialog.close();
+toolsDialogClose.addEventListener("click", (e) => {
+    toolsDialog.close();
 })
 
-compressionUpdate.addEventListener("click", async (e) => {
-    compressionLabel.innerText = 'Updating...';
-    let resp = await fetch("/compression/update", {"method": "POST"});
-    compressionLabel.innerText = 'Compression';
+toolsUpdate.addEventListener("click", async (e) => {
+    toolsLabel.innerText = 'Updating...';
+    let resp = await fetch("/tools/update", {"method": "POST"});
+    toolsLabel.innerText = 'Tools';
     alert(await resp.text());
-    updateCompressionDialogOptions();
+    updateToolsDialogOptions();
 })
 
 viewGenCode.addEventListener("click", (e) => {
@@ -472,4 +472,4 @@ window.solutionView = solutionView;
 window.annotationsView = annotationsView;
 
 updateEverythingAccordingToViewingTaskNum()
-updateCompressionDialogOptions()
+updateToolsDialogOptions()
