@@ -269,7 +269,7 @@ def verify_program(task_num, examples):
 
     def verify(example_subset):
         nonlocal has_printed_first_err
-        right, wrong, expected, index = 0, 0, None, -1
+        right, wrong, expected, overall_index = 0, 0, None, -1
         for index, example in example_subset:
             example_copy = copy.deepcopy(example)
             try:
@@ -277,6 +277,7 @@ def verify_program(task_num, examples):
                     right += 1
                 else:
                     expected = copy.deepcopy(example)
+                    overall_index = index
                     wrong += 1
             except Exception as e:
                 if not has_printed_first_err:
@@ -285,7 +286,7 @@ def verify_program(task_num, examples):
                     traceback.print_exc(file=sys.stdout)
                 has_printed_first_err = True
                 wrong += 1
-        return right, wrong, expected, index
+        return right, wrong, expected, overall_index
 
     train_test_examples = []
     i=0
