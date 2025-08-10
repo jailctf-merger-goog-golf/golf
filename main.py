@@ -152,12 +152,12 @@ def view(task):
 
 
 @auth_required
-@app.get('/random')
-def random_chal():
-    ok = set(range(1,401))-{int(taskfile.removeprefix("task").removesuffix(".py")) for taskfile in os.listdir('./sols/')}
-    if len(ok) == 0:
-        return 'uhhhh all completed !?!?!?! good job future me', 500
-    return str(choice(list(ok))), 200
+@app.get('/viewtc/<int:task>/<int:testcase>')
+def viewtc(task, testcase):
+    os.makedirs("working/viewtc", exist_ok=True)
+    if not os.path.isfile(f"./working/viewtc/task{task:03d}-{testcase}.png"):
+        subprocess.check_output(['python3', 'view-task-tc.py', str(task), str(testcase)])
+    return send_from_directory("./working/viewtc/", f"task{task:03d}-{testcase}.png", mimetype='image/png')
 
 
 @auth_required

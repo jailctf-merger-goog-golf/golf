@@ -31,7 +31,7 @@ websocket.onmessage = (event) => {
     if (data.type == "set-listen-done") {
         openToReceiving = true;
     }
-    if (data.type == "random-unsolved") {
+    if (data.type == "random-unsolved" || data.type == "random-negative") {
         viewingTaskNum = data.task ?? 1;
         updateEverythingAccordingToViewingTaskNum()
     }
@@ -86,6 +86,12 @@ let websocketSendRandomUnsolvedRequest = () => {
         "type": "random-unsolved"
     }))
 }
+let websocketSendRandomNegativeRequest = () => {
+    websocket.send(JSON.stringify({
+        "safety_key": SAFETY_KEY,
+        "type": "random-negative"
+    }))
+}
 
 
 // everything else
@@ -97,6 +103,7 @@ import {coolGlow} from 'thememirror';
 
 let longTimeout = document.getElementById('long-timeout');
 let randomUnsolved = document.getElementById('random-unsolved');
+let randomNegative = document.getElementById('random-negative');
 let resultElm = document.getElementById("result");
 let taskElm = document.getElementById("task");
 let previewElm = document.getElementById("preview");
@@ -238,32 +245,66 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
             elm.innerText = s;
             elm.addEventListener("mouseover", () => {
                 if (copiedToClipboardTimeout === undefined) {
-                    copyTestcaseButtonsLabel.innerText = "(shift to copy test case output)"
+                    copyTestcaseButtonsLabel.innerText = "(shift=output, ctrl=view)"
                 }
             });
             elm.addEventListener("mouseout", () => {
                 if (copiedToClipboardTimeout === undefined) {
-                    copyTestcaseButtonsLabel.innerText = "Copy test case:"
+                    copyTestcaseButtonsLabel.innerText = "Copy/view test case:"
                 }
             })
-            elm.addEventListener("click", (e) => {
+            elm.addEventListener("click", async (e) => {
                 let test = casefn();
                 if (test === undefined) {
                     copyTestcaseButtonsLabel.innerText = "Failure"
                     copiedToClipboardTimeout = setTimeout(() => {
                         copiedToClipboardTimeout = undefined;
-                        copyTestcaseButtonsLabel.innerText = "Copy test case:"
+                        copyTestcaseButtonsLabel.innerText = "Copy/view test case:"
                     }, 1000)
                     return document.createTextNode("");  // empty text is nothing hack
                 }
+                if (e.ctrlKey) {  // viewing
+                    copyTestcaseButtonsLabel.innerText = "Rendering ..."
+
+                    resultElm.style.backgroundImage = "";
+                    while (resultElm.firstChild) { resultElm.firstChild.remove(); }
+
+                    let loadingElm = document.createElement("code");
+                    loadingElm.innerHTML = "<br>rendering ...";
+                    resultElm.appendChild(loadingElm)
+
+                    let resp = await fetch(`/viewtc/${viewingTaskNum}/${test.n}`)
+                    function _arrayBufferToBase64( buffer ) {
+                        var binary = '';
+                        var bytes = new Uint8Array( buffer );
+                        var len = bytes.byteLength;
+                        for (var i = 0; i < len; i++) {
+                            binary += String.fromCharCode( bytes[ i ] );
+                        }
+                        return window.btoa( binary );
+                    }
+                    let src = 'data:image/png;base64,'+_arrayBufferToBase64(await resp.arrayBuffer());
+                    console.log(src)
+
+                    resultElm.style.backgroundImage = "";
+                    while (resultElm.firstChild) { resultElm.firstChild.remove(); }
+
+                    let rendered = document.createElement("img");
+                    rendered.src = src;
+                    rendered.classList.add("broken");
+                    resultElm.appendChild(rendered)
+
+                    copyTestcaseButtonsLabel.innerText = "Copy/view test case:"
+                    return;
+                }
                 try {
                     let arr = e.shiftKey ? test.output : test.input;
-                    navigator.clipboard.writeText(JSON.stringify(arr).replaceAll(",", ', '))
+                    navigator.clipboard.writeText(JSON.stringify(arr).replaceAll(",", ', ').replaceAll('], [','],\n['))
                 } catch (e) { alert(String(e)) }
                 copyTestcaseButtonsLabel.innerText = "Copied!"
                 copiedToClipboardTimeout = setTimeout(() => {
                     copiedToClipboardTimeout = undefined;
-                    copyTestcaseButtonsLabel.innerText = "Copy test case:"
+                    copyTestcaseButtonsLabel.innerText = "Copy/view test case:"
                 }, 1000)
             })
             return elm;
@@ -272,17 +313,23 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
         let allTests = tests.concat(info['arc-gen'])
         while (copyTestcaseButtons.firstChild) { copyTestcaseButtons.firstChild.remove(); }
         for (let i=0; i<tests.length; i++) {
-            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), () => tests[i]))
+            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), () => {
+                tests[i].n = i+1;
+                return tests[i];
+            }))
         }
         copyTestcaseButtons.appendChild(createTestcaseButton("N", () => {
             let n=parseInt((prompt("N=?") ?? "X").replaceAll(/[^0-9]/g, ''));
             if (isNaN(n) || !isFinite(n) || n > allTests.length || n < 1) {
                 return;
             }
+            allTests[n-1].n = n;
             return allTests[n-1];
         }))
         copyTestcaseButtons.appendChild(createTestcaseButton("Random", () => {
             let n=Math.floor(Math.random()*allTests.length);
+            alert(`Using test ${n+1}`)
+            allTests[n].n = n+1;
             return allTests[n];
         }))
     }
@@ -360,6 +407,10 @@ runButton.addEventListener("click", (e) => {
 
 randomUnsolved.addEventListener('click', async (e) => {
     websocketSendRandomUnsolvedRequest();
+})
+
+randomNegative.addEventListener('click', async (e) => {
+    websocketSendRandomNegativeRequest();
 })
 
 
