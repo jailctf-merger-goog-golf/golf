@@ -155,9 +155,10 @@ let updateToolsDialogOptions = async () => {
 
             function hexToBytes(hex) {
                 let bytes = "";
+                console.log(hex)
                 for (let c = 0; c < hex.length; c += 2) {
                     bytes += (String.fromCharCode(parseInt(hex.substr(c, 2), 16)));
-                    console.log(hex.substr(c, 2));
+                    console.log(hex.substr(c, 2), hex.substr(c, 2).length);
                 }
                 console.log(bytes);
                 return bytes;
