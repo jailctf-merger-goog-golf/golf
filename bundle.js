@@ -26147,8 +26147,10 @@ var updateToolsDialogOptions = async () => {
       let data2 = await resp2.json();
       function hexToBytes(hex) {
         let bytes = "";
-        for (let c = 0; c < hex.length; c += 2)
+        for (let c = 0; c < hex.length; c += 2) {
           bytes += String.fromCharCode(parseInt(hex.substr(c, 2), 16));
+          console.log(hex.substr(c, 2));
+        }
         return bytes;
       }
       let inp = hexToBytes(data2.stdout);
