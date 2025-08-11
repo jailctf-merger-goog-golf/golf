@@ -35,6 +35,30 @@ websocket.onmessage = (event) => {
         viewingTaskNum = data.task ?? 1;
         updateEverythingAccordingToViewingTaskNum()
     }
+    if (data.type == "download-zip") {
+        function base64ToArrayBuffer(base64) {
+            var binaryString = window.atob(base64);
+            var binaryLen = binaryString.length;
+            var bytes = new Uint8Array(binaryLen);
+            for (var i = 0; i < binaryLen; i++) {
+               var ascii = binaryString.charCodeAt(i);
+               bytes[i] = ascii;
+            }
+            return bytes;
+         }
+
+        function saveByteArray(reportName, byte) {
+            var blob = new Blob([byte], {type: "application/zip"});
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            var fileName = reportName;
+            link.download = fileName;
+            link.click();
+        };
+
+        let sampleArr = base64ToArrayBuffer(data.zip);
+        saveByteArray(`export-${Math.floor(Date.now()/1000)}.zip`, sampleArr);
+    }
     if (typeof data.timing === "number") {
         websocketTiming = data.timing;
     }
@@ -92,6 +116,12 @@ let websocketSendRandomNegativeRequest = () => {
         "type": "random-negative"
     }))
 }
+let websocketSendDownloadZipRequest = () => {
+    websocket.send(JSON.stringify({
+        "safety_key": SAFETY_KEY,
+        "type": "download-zip"
+    }))
+}
 
 
 // everything else
@@ -104,6 +134,7 @@ import {coolGlow} from 'thememirror';
 let longTimeout = document.getElementById('long-timeout');
 let randomUnsolved = document.getElementById('random-unsolved');
 let randomNegative = document.getElementById('random-negative');
+let downloadZip = document.getElementById('download-zip');
 let resultElm = document.getElementById("result");
 let taskElm = document.getElementById("task");
 let previewElm = document.getElementById("preview");
@@ -413,6 +444,10 @@ randomUnsolved.addEventListener('click', async (e) => {
 
 randomNegative.addEventListener('click', async (e) => {
     websocketSendRandomNegativeRequest();
+})
+
+downloadZip.addEventListener('click', async (e) => {
+    websocketSendDownloadZipRequest();
 })
 
 

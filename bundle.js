@@ -26037,6 +26037,28 @@ websocket.onmessage = (event) => {
     viewingTaskNum = data.task ?? 1;
     updateEverythingAccordingToViewingTaskNum();
   }
+  if (data.type == "download-zip") {
+    let base64ToArrayBuffer = function(base64) {
+      var binaryString = window.atob(base64);
+      var binaryLen = binaryString.length;
+      var bytes = new Uint8Array(binaryLen);
+      for (var i = 0; i < binaryLen; i++) {
+        var ascii = binaryString.charCodeAt(i);
+        bytes[i] = ascii;
+      }
+      return bytes;
+    }, saveByteArray = function(reportName, byte) {
+      var blob = new Blob([byte], { type: "application/zip" });
+      var link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      var fileName = reportName;
+      link.download = fileName;
+      link.click();
+    };
+    ;
+    let sampleArr = base64ToArrayBuffer(data.zip);
+    saveByteArray(`export-${Math.floor(Date.now() / 1e3)}.zip`, sampleArr);
+  }
   if (typeof data.timing === "number") {
     websocketTiming = data.timing;
   }
@@ -26094,9 +26116,16 @@ var websocketSendRandomNegativeRequest = () => {
     "type": "random-negative"
   }));
 };
+var websocketSendDownloadZipRequest = () => {
+  websocket.send(JSON.stringify({
+    "safety_key": SAFETY_KEY,
+    "type": "download-zip"
+  }));
+};
 var longTimeout = document.getElementById("long-timeout");
 var randomUnsolved = document.getElementById("random-unsolved");
 var randomNegative = document.getElementById("random-negative");
+var downloadZip = document.getElementById("download-zip");
 var resultElm = document.getElementById("result");
 var taskElm = document.getElementById("task");
 var previewElm = document.getElementById("preview");
@@ -26382,6 +26411,9 @@ randomUnsolved.addEventListener("click", async (e) => {
 });
 randomNegative.addEventListener("click", async (e) => {
   websocketSendRandomNegativeRequest();
+});
+downloadZip.addEventListener("click", async (e) => {
+  websocketSendDownloadZipRequest();
 });
 var prevTaskVal;
 var lastNonEmptyTaskVal;

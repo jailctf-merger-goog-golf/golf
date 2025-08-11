@@ -52,7 +52,7 @@ p, h1, h2, h3, h4, h5, h6 {
 /* more specific stuff */
 
 .buttons {
-    padding: 5px;
+    padding: 2px;
     width: calc(100% - 10px);
     align-items: center;
     gap: 5px;
