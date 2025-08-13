@@ -155,6 +155,7 @@ let toolsLabel = document.getElementById('tools-label');
 let toolsError = document.getElementById('tools-error');
 let toolsOptions = document.getElementById('tools-options');
 let toolsDialogClose = document.getElementById('tools-close');
+let latencyText = document.getElementById("latency-text");
 
 
 let updateToolsDialogOptions = async () => {
@@ -527,15 +528,25 @@ setInterval(() => {
 
 setInterval(() => {
     if (websocketTiming == -1) { return; }
-    if (Math.abs(websocketTiming - Date.now()/1000) < 3) { return; }
+    latencyText.innerText = Math.abs(websocketTiming*1000 - Date.now()).toFixed(0) + 'ms';
+    latencyText.style.color = "#ffffff";
+    latencyText.style.fontSize = "12px";
+    if (Math.abs(websocketTiming - Date.now()/1000) < 7) {
+        refreshAsapMessageGiven = false;
+        if (Math.abs(websocketTiming - Date.now()/1000) < 2) {
+            latencyText.style.opacity = "0.2";
+        } else {
+            latencyText.style.opacity = String((0.2 + 0.8 * (Math.abs(websocketTiming - Date.now()/1000) - 2)/(7-2)).toFixed(3));
+        }
+        return;
+    }
+    latencyText.style.fontSize = "24px";
+    latencyText.style.color = "#ec0868";
     if (!refreshAsapMessageGiven) {
         refreshAsapMessageGiven = true;
-        alert("No packet in 3 seconds! You could be disconnected. Please copy your sol/annotations to clipboard and refresh ASAP!");
-        setInterval(() => {
-            alert("No packet in 3 seconds! You could be disconnected. Please copy your sol/annotations to clipboard and refresh ASAP!");
-        }, 30000)
+        alert("No packet in 7 seconds! You could be disconnected. See bottom-right latency counter for more info. Please copy your sol/annotations to clipboard and refresh ASAP!");
     }
-}, 500);
+}, 200);
 
 let solutionListen = EditorView.updateListener.of((v) => {
     if (v.docChanged) {
