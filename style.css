@@ -261,8 +261,10 @@ img {
     display: flex;
     justify-content: start;
 }
-
 .fancy-button {
+    display: flex-inline;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
     font-size: 20px;
     color: white;

@@ -39,6 +39,7 @@ def auth_required(func):
 
 
 app = Flask(__name__)
+os.makedirs("./best", exist_ok=True)
 
 
 def execute_task(task, timeout):
@@ -149,6 +150,17 @@ def view(task):
     if not os.path.isfile(f"./working/view/task{task:03d}.png"):
         subprocess.check_output(['python3', 'view-task.py', str(task)])
     return send_from_directory("./working/view/", f"task{task:03d}.png", mimetype='image/png')
+
+
+@auth_required
+@app.get('/best/<int:task>')
+def best(task):
+    try:
+        with open(f"./best/task{task:03d}.py", 'rb') as f:
+            data = f.read()
+        return data.hex(), 200
+    except FileNotFoundError:
+        return "not found oops", 500
 
 
 @auth_required

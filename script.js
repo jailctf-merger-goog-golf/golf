@@ -161,6 +161,7 @@ let toolsOptions = document.getElementById('tools-options');
 let toolsDialogClose = document.getElementById('tools-close');
 let latencyText = document.getElementById("latency-text");
 let numberListening = document.getElementById("number-listening");
+let loadBestWorking = document.getElementById("load-best-working");
 
 
 let updateToolsDialogOptions = async () => {
@@ -456,6 +457,26 @@ downloadZip.addEventListener('click', async (e) => {
     websocketSendDownloadZipRequest();
 })
 
+loadBestWorking.addEventListener('click', async (e) => {
+    let resp = await fetch(`/best/${viewingTaskNum}`);
+    if (resp.status != 200) {
+        alert(await resp.text());
+    } else {
+        function hexToBytes(hex) {
+            hex = hex.replaceAll(/[^0-9a-f]/g, '');
+            let bytes = "";
+            for (let c = 0; c < hex.length; c += 2) {
+                bytes += (String.fromCharCode(parseInt(hex.substr(c, 2), 16)));
+            }
+            return bytes;
+        }
+        let inp = hexToBytes(await resp.text());
+        solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } })
+        ignoreWebsocketUntil = websocketTiming+1.1;
+        websocketSendSolution(true);
+    }
+})
+
 
 let prevTaskVal;
 let lastNonEmptyTaskVal;
@@ -533,7 +554,7 @@ setInterval(() => {
 
 setInterval(() => {
     if (websocketTiming == -1) { return; }
-    console.log(Date.now()/1000 - systemTimesOffset, websocketTiming)
+//    console.log(Date.now()/1000 - systemTimesOffset, websocketTiming)
     latencyText.innerText = (Date.now()/1000 - systemTimesOffset - websocketTiming).toFixed(3) + 's';
     latencyText.style.color = "#ffffff";
     latencyText.style.fontSize = "12px";

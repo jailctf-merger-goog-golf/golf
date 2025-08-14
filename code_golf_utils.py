@@ -306,6 +306,21 @@ def verify_program(task_num, examples):
         task_length = os.path.getsize(task_path)
         print("Your code IS READY for submission!")
         print("Its length appears to be " + str(task_length) + " bytes.")
+        try:
+            with open(f"./best/task{task_num:03d}.py", 'rb') as f:
+                old = f.read()
+            if len(old) > task_length:  # new best
+                with open(f"./best/task{task_num:03d}.py", 'wb') as f:
+                    f.write(file_content)
+                print(f"Saved new best in ./best/task{task_num:03d}.py!")
+            elif len(old) == task_length:
+                print(f"This solution is the same length as the saved best in ./best/task{task_num:03d}.py!")
+            else:
+                print(f"Does not beat best of {len(old)} bytes.")
+        except FileNotFoundError:
+            print("First saved new best sol! good job")
+            with open(f"./best/task{task_num:03d}.py", 'wb') as f:
+                f.write(file_content)
     else:
         print("Your code IS NOT ready for submission.")
         expected = arc_agi_expected if arc_agi_expected else arc_gen_expected
