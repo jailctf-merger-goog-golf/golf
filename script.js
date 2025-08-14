@@ -15,6 +15,8 @@ SAFETY_KEY = SAFETY_KEY.trim()
 let viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
 let lastViewingTaskNum = viewingTaskNum;
 
+// better latency tracking for websocket stuff
+let systemTimesOffset = -1;
 // websockets stuff
 let refreshAsapMessageGiven = false;
 let websocketTiming = -1;
@@ -60,6 +62,7 @@ websocket.onmessage = (event) => {
         saveByteArray(`export-${Math.floor(Date.now()/1000)}.zip`, sampleArr);
     }
     if (typeof data.timing === "number") {
+        systemTimesOffset = Date.now()/1000 - data.timing;
         websocketTiming = data.timing;
     }
     if (openToReceiving && websocketTiming > ignoreWebsocketUntil) {
@@ -83,7 +86,7 @@ let websocketSendViewTask = () => {
 }
 let websocketSendAnnotations = () => {
     if (annotationsView.hasFocus) {
-        ignoreWebsocketUntil = websocketTiming+0.5;  // assume latency is 0.5 seconds at most
+        ignoreWebsocketUntil = websocketTiming+1.0;  // assume latency is 1 second at most
         websocket.send(JSON.stringify({
             "safety_key": SAFETY_KEY,
             "timing": websocketTiming,
@@ -95,7 +98,7 @@ let websocketSendAnnotations = () => {
 }
 let websocketSendSolution = (force=false) => {
     if (solutionView.hasFocus || force) {
-        ignoreWebsocketUntil = websocketTiming+0.5;  // assume latency is 0.5 seconds at most
+        ignoreWebsocketUntil = websocketTiming+1.0;  // assume latency is 1 second at most
         websocket.send(JSON.stringify({
             "safety_key": SAFETY_KEY,
             "timing": websocketTiming,
@@ -197,7 +200,7 @@ let updateToolsDialogOptions = async () => {
             }
             let inp = hexToBytes(data2.stdout);
             solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } })
-            ignoreWebsocketUntil = websocketTiming+0.7;
+            ignoreWebsocketUntil = websocketTiming+1.1;
             websocketSendSolution(true);
 
             toolsError.innerText = data2.stderr;
@@ -249,7 +252,7 @@ pasteSol.addEventListener('click', async (e) => {
     }
     inp = hexToBytes(inp);
     solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } })
-    ignoreWebsocketUntil = websocketTiming+0.5;
+    ignoreWebsocketUntil = websocketTiming+1.1;
     websocketSendSolution(true);
 })
 
@@ -530,8 +533,8 @@ setInterval(() => {
 
 setInterval(() => {
     if (websocketTiming == -1) { return; }
-    console.log(Date.now()/1000-websocketTiming)
-    latencyText.innerText = Math.abs(websocketTiming*1000 - Date.now()).toFixed(0) + 'ms';
+    console.log(Date.now()/1000 - systemTimesOffset, websocketTiming)
+    latencyText.innerText = (Date.now()/1000 - systemTimesOffset - websocketTiming).toFixed(3) + 's';
     latencyText.style.color = "#ffffff";
     latencyText.style.fontSize = "12px";
     if (Math.abs(websocketTiming - Date.now()/1000) < 7) {

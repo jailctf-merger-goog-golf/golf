@@ -26018,6 +26018,7 @@ while (!SAFETY_KEY) {
 }
 SAFETY_KEY = SAFETY_KEY.trim();
 var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
+var systemTimesOffset = -1;
 var refreshAsapMessageGiven = false;
 var websocketTiming = -1;
 var ignoreWebsocketUntil = -1;
@@ -26060,6 +26061,7 @@ websocket.onmessage = (event) => {
     saveByteArray(`export-${Math.floor(Date.now() / 1e3)}.zip`, sampleArr);
   }
   if (typeof data.timing === "number") {
+    systemTimesOffset = Date.now() / 1e3 - data.timing;
     websocketTiming = data.timing;
   }
   if (openToReceiving && websocketTiming > ignoreWebsocketUntil) {
@@ -26083,7 +26085,7 @@ var websocketSendViewTask = () => {
 };
 var websocketSendAnnotations = () => {
   if (annotationsView.hasFocus) {
-    ignoreWebsocketUntil = websocketTiming + 0.5;
+    ignoreWebsocketUntil = websocketTiming + 1;
     websocket.send(JSON.stringify({
       "safety_key": SAFETY_KEY,
       "timing": websocketTiming,
@@ -26095,7 +26097,7 @@ var websocketSendAnnotations = () => {
 };
 var websocketSendSolution = (force = false) => {
   if (solutionView.hasFocus || force) {
-    ignoreWebsocketUntil = websocketTiming + 0.5;
+    ignoreWebsocketUntil = websocketTiming + 1;
     websocket.send(JSON.stringify({
       "safety_key": SAFETY_KEY,
       "timing": websocketTiming,
@@ -26187,7 +26189,7 @@ var updateToolsDialogOptions = async () => {
       }
       let inp = hexToBytes(data2.stdout);
       solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } });
-      ignoreWebsocketUntil = websocketTiming + 0.7;
+      ignoreWebsocketUntil = websocketTiming + 1.1;
       websocketSendSolution(true);
       toolsError.innerText = data2.stderr;
       toolsLabel.innerText = "Tools";
@@ -26231,7 +26233,7 @@ pasteSol.addEventListener("click", async (e) => {
   }
   inp = hexToBytes(inp);
   solutionView.dispatch({ changes: { from: 0, to: solutionView.state.doc.length, insert: inp } });
-  ignoreWebsocketUntil = websocketTiming + 0.5;
+  ignoreWebsocketUntil = websocketTiming + 1.1;
   websocketSendSolution(true);
 });
 var updateEverythingAccordingToViewingTaskNum = async () => {
@@ -26493,8 +26495,8 @@ setInterval(() => {
   if (websocketTiming == -1) {
     return;
   }
-  console.log(Date.now() / 1e3 - websocketTiming);
-  latencyText.innerText = Math.abs(websocketTiming * 1e3 - Date.now()).toFixed(0) + "ms";
+  console.log(Date.now() / 1e3 - systemTimesOffset, websocketTiming);
+  latencyText.innerText = (Date.now() / 1e3 - systemTimesOffset - websocketTiming).toFixed(3) + "s";
   latencyText.style.color = "#ffffff";
   latencyText.style.fontSize = "12px";
   if (Math.abs(websocketTiming - Date.now() / 1e3) < 7) {
