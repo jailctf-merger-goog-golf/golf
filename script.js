@@ -72,6 +72,7 @@ websocket.onmessage = (event) => {
         if (typeof data.known === "number") {
             receivedKnown = data.known;
         }
+        numberListening.innerText = data["number-listening"] ?? 0;
     }
 };
 websocket.onopen = (event) => {
@@ -156,6 +157,7 @@ let toolsError = document.getElementById('tools-error');
 let toolsOptions = document.getElementById('tools-options');
 let toolsDialogClose = document.getElementById('tools-close');
 let latencyText = document.getElementById("latency-text");
+let numberListening = document.getElementById("number-listening");
 
 
 let updateToolsDialogOptions = async () => {
@@ -528,6 +530,7 @@ setInterval(() => {
 
 setInterval(() => {
     if (websocketTiming == -1) { return; }
+    console.log(Date.now()/1000-websocketTiming)
     latencyText.innerText = Math.abs(websocketTiming*1000 - Date.now()).toFixed(0) + 'ms';
     latencyText.style.color = "#ffffff";
     latencyText.style.fontSize = "12px";
