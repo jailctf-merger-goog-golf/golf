@@ -5,6 +5,7 @@ from flask import request
 import subprocess
 import tempfile
 from json import dumps
+from functools import wraps
 import os
 from random import choice
 from dotenv import load_dotenv
@@ -31,6 +32,7 @@ if PYTHON_EXECUTABLE is None:
 
 
 def auth_required(func):
+    @wraps(func)
     def wrapper(*args, **kwargs):
         if "auth" not in session or not session["auth"]:
             raise PermissionError('Unauthorized', 401)
