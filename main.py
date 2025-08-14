@@ -77,39 +77,39 @@ def auth():
     return 'nope', 401
 
 
-@auth_required
 @app.route('/style.css')
+@auth_required
 def swag():
     return send_file("./style.css")
 
 
-@auth_required
 @app.route('/cm6.bundle.min.js')
+@auth_required
 def cm6():
     return send_file("./cm6.bundle.min.js", mimetype="application/javascript")
 
 
-@auth_required
 @app.route('/bundle.js')
+@auth_required
 def script():
     return send_file("./bundle.js", mimetype="application/javascript")
 
 
-@auth_required
 @app.route('/consolas.ttf')
+@auth_required
 def consolas():
     return send_file("./consolas.ttf", mimetype="font/ttf")
 
 
-@auth_required
 @app.route('/working/<path:filepath>')
+@auth_required
 def working(filepath):
     os.makedirs("working", exist_ok=True)
     return send_from_directory("./working/", filepath, mimetype='image/png')
 
 
-@auth_required
 @app.route('/infos/<path:filepath>')
+@auth_required
 def infos(filepath):
     return send_from_directory("./infos/", filepath, mimetype='application/json')
 
@@ -124,8 +124,8 @@ def fav():
     return send_file("./favicon.ico", mimetype='image/ico')
 
 
-@auth_required
 @app.post('/run/<int:task>')
+@auth_required
 def run(task):
     os.makedirs("working/actual", exist_ok=True)
     os.makedirs("working/expected", exist_ok=True)
@@ -143,8 +143,8 @@ def run(task):
     return output, status_code
 
 
-@auth_required
 @app.get('/view/<int:task>')
+@auth_required
 def view(task):
     os.makedirs("working/view", exist_ok=True)
     if not os.path.isfile(f"./working/view/task{task:03d}.png"):
@@ -152,8 +152,8 @@ def view(task):
     return send_from_directory("./working/view/", f"task{task:03d}.png", mimetype='image/png')
 
 
-@auth_required
 @app.get('/best/<int:task>')
+@auth_required
 def best(task):
     try:
         with open(f"./best/task{task:03d}.py", 'rb') as f:
@@ -163,8 +163,8 @@ def best(task):
         return "not found oops", 500
 
 
-@auth_required
 @app.get('/viewtc/<int:task>/<int:testcase>')
+@auth_required
 def viewtc(task, testcase):
     os.makedirs("working/viewtc", exist_ok=True)
     if not os.path.isfile(f"./working/viewtc/task{task:03d}-{testcase}.png"):
@@ -172,16 +172,16 @@ def viewtc(task, testcase):
     return send_from_directory("./working/viewtc/", f"task{task:03d}-{testcase}.png", mimetype='image/png')
 
 
-@auth_required
 @app.get('/tools/list')
+@auth_required
 def list_tools():
     if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
     return dumps(os.listdir("compression/options")), 200
 
 
-@auth_required
 @app.post('/tools/run/<path:filepath>')
+@auth_required
 def do_tool(filepath):
     if not os.path.isdir("tools"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
@@ -217,8 +217,8 @@ def do_tool(filepath):
     return dumps({"stderr": stderr, "stdout": stdout.removesuffix("\n\u001b[0m")}), status_code
 
 
-@auth_required
 @app.post("/tools/update")
+@auth_required
 def update_tools():
     if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
