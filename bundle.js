@@ -26163,15 +26163,19 @@ var updateToolsDialogOptions = async () => {
     toolsOptions.firstChild.remove();
   }
   for (let option of options) {
+    let { name: optionName, local_only: optionLocalOnly } = option;
+    if (optionLocalOnly) {
+      return;
+    }
     let compOption = document.createElement("div");
     compOption.classList.add("tools-option");
     compOption.classList.add("fancy-button");
-    compOption.innerText = option;
+    compOption.innerText = optionName;
     compOption.addEventListener("click", async () => {
       toolsError.innerText = "";
-      toolsLabel.innerText = "Running " + option;
+      toolsLabel.innerText = "Running " + optionName;
       let resp2 = await fetch(
-        "/tools/run/" + option,
+        "/tools/run/" + optionName,
         { method: "POST", body: [...solutionView.state.doc.toString()].map((q) => q.charCodeAt(0).toString(16).padStart(2, "0")).join("") }
       );
       if (resp2.status !== 200) {

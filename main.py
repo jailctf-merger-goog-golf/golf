@@ -179,13 +179,14 @@ def viewtc(task, testcase):
 def list_tools():
     if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
-    return dumps(os.listdir("compression/options")), 200
+    res = subprocess.check_output([PYTHON_EXECUTABLE, "./compression/main.py", "list"]).decode('l1').split('\n')[0]
+    return res, 200
 
 
-@app.post('/tools/run/<path:filepath>')
+@app.post('/tools/run/<path:toolname>')
 @auth_required
-def do_tool(filepath):
-    if not os.path.isdir("tools"):
+def do_tool(toolname):
+    if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
 
     TIMEOUT = 12  # seconds
@@ -196,7 +197,7 @@ def do_tool(filepath):
         f.write(bytes.fromhex(data))
         f.close()
         try:
-            proc = subprocess.run([PYTHON_EXECUTABLE, 'compression/options/'+filepath, f.name],
+            proc = subprocess.run([PYTHON_EXECUTABLE, './compression/main.py', 'run-from-file', f.name, toolname],
                                   capture_output=True, timeout=TIMEOUT, text=True, encoding='latin-1')
             if proc.returncode != 0:
                 status_code = 500
@@ -216,7 +217,7 @@ def do_tool(filepath):
             stderr = traceback.format_exc()
             stdout = data
 
-    return dumps({"stderr": stderr, "stdout": stdout.removesuffix("\n\u001b[0m")}), status_code
+    return dumps({"stderr": stderr, "stdout": stdout.removesuffix("\u001b[0m")}), status_code
 
 
 @app.post("/tools/update")

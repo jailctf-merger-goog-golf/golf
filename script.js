@@ -173,14 +173,18 @@ let updateToolsDialogOptions = async () => {
     let options = await resp.json();
     while (toolsOptions.firstChild) { toolsOptions.firstChild.remove(); }
     for (let option of options) {
+        let { name: optionName, local_only: optionLocalOnly } = option;
+        if (optionLocalOnly) {
+            return; // todo handle better
+        }
         let compOption = document.createElement("div");
         compOption.classList.add("tools-option")
         compOption.classList.add("fancy-button")
-        compOption.innerText = option;
+        compOption.innerText = optionName;
         compOption.addEventListener("click", async () => {
             toolsError.innerText = '';
-            toolsLabel.innerText = 'Running ' + option;
-            let resp2 = await fetch("/tools/run/"+option,
+            toolsLabel.innerText = 'Running ' + optionName;
+            let resp2 = await fetch("/tools/run/"+optionName,
                 {method: "POST", body: [...solutionView.state.doc.toString()].map(q => q.charCodeAt(0).toString(16).padStart(2, '0')).join("")}
             )
             if (resp2.status !== 200) {
