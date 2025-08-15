@@ -170,7 +170,10 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
         for r, row in enumerate(grid):
             for c, cell in enumerate(row):
                 try:
-                    col=colors[cell]
+                    if isinstance(cell, int) and (cell > 9 or cell < 0):
+                        col = (139,69,19)
+                    else:
+                        col=colors[cell]
                 except (IndexError, TypeError):
                     raise NotImplementedError("bad color:" + repr(cell))
                 try:
@@ -183,7 +186,10 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
                 if isinstance(cell, list):
                     raise NotImplementedError("result not 2d list: " + str(output))
                 try:
-                    col=colors[cell]
+                    if isinstance(cell, int) and (cell > 9 or cell < 0):
+                        col = (139,69,19)
+                    else:
+                        col=colors[cell]
                 except (IndexError, TypeError) as e:
                     raise NotImplementedError("bad color:" + repr(cell))
                 try:
