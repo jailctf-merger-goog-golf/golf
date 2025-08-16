@@ -298,7 +298,7 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
                 }
             })
             elm.addEventListener("click", async (e) => {
-                let test = casefn();
+                let test = casefn(e);
                 if (test === undefined) {
                     copyTestcaseButtonsLabel.innerText = "Failure"
                     copiedToClipboardTimeout = setTimeout(() => {
@@ -333,6 +333,10 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
                     resultElm.style.backgroundImage = "";
                     while (resultElm.firstChild) { resultElm.firstChild.remove(); }
 
+                    let taskSayElm = document.createElement("code");
+                    taskSayElm.innerHTML = "<br>task " + test.n;
+                    resultElm.appendChild(taskSayElm)
+
                     let rendered = document.createElement("img");
                     rendered.src = src;
                     rendered.classList.add("broken");
@@ -357,12 +361,12 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
         let allTests = tests.concat(info['arc-gen'])
         while (copyTestcaseButtons.firstChild) { copyTestcaseButtons.firstChild.remove(); }
         for (let i=0; i<tests.length; i++) {
-            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), () => {
+            copyTestcaseButtons.appendChild(createTestcaseButton(String(i+1), (e) => {
                 tests[i].n = i+1;
                 return tests[i];
             }))
         }
-        copyTestcaseButtons.appendChild(createTestcaseButton("N", () => {
+        copyTestcaseButtons.appendChild(createTestcaseButton("N", (e) => {
             let n=parseInt((prompt("N=?") ?? "X").replaceAll(/[^0-9]/g, ''));
             if (isNaN(n) || !isFinite(n) || n > allTests.length || n < 1) {
                 return;
@@ -370,9 +374,11 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
             allTests[n-1].n = n;
             return allTests[n-1];
         }))
-        copyTestcaseButtons.appendChild(createTestcaseButton("Random", () => {
+        copyTestcaseButtons.appendChild(createTestcaseButton("Random", (e) => {
             let n=Math.floor(Math.random()*allTests.length);
-            alert(`Using test ${n+1}`)
+            if (!e.ctrlKey) {
+                alert(`Using test ${n+1}`)
+            }
             allTests[n].n = n+1;
             return allTests[n];
         }))
