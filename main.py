@@ -24,7 +24,6 @@ if SECRET_KEY is None:
     exit(1)
 
 
-print("todo use python executable env var for running and not just compression")  # todo
 PYTHON_EXECUTABLE = os.getenv('PYTHON_EXECUTABLE')
 if PYTHON_EXECUTABLE is None:
     print("using default python executable python3")
@@ -47,7 +46,7 @@ os.makedirs("./best", exist_ok=True)
 def execute_task(task, timeout):
     print(timeout)
     try:
-        proc = subprocess.run(['python3', 'run-task.py', str(task)], capture_output=True, timeout=timeout, text=True, encoding='latin-1')
+        proc = subprocess.run([PYTHON_EXECUTABLE, 'run-task.py', str(task)], capture_output=True, timeout=timeout, text=True, encoding='latin-1')
         if proc.returncode != 0:
             status_code = 500
             output = proc.stderr
