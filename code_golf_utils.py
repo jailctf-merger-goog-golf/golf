@@ -17,6 +17,7 @@
 import copy
 import importlib.util
 import json
+import re
 import os
 import sys
 
@@ -154,12 +155,12 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
     width, height, offset = 0, 0, 1
     for example in examples:
         grid, output = example["input"], example["output"]
-        if not isinstance(output, list):
-            raise NotImplementedError("result not 2d list: " + str(output))
-        if not isinstance(output[0], list):
-            raise NotImplementedError("result not 2d list: " + str(output))
+        if not isinstance(output, (list, tuple)):
+            raise NotImplementedError("result not 2d list/tuple: " + str(output))
+        if not isinstance(output[0], (list, tuple)):
+            raise NotImplementedError("result not 2d list/tuple: " + str(output))
         if len(output[0])==0:
-            raise NotImplementedError("result is [[]] which is not ok")
+            raise NotImplementedError("result[0] is empty which is not ok")
         width += len(grid[0]) + 1 + len(output[0]) + 6
         height = max(height, max(len(grid), len(output)) + 4)
     # Determine the contents of the image.
@@ -279,7 +280,14 @@ def verify_program(task_num, examples):
         for index, example in example_subset:
             example_copy = copy.deepcopy(example)
             try:
-                if program(example_copy["input"]) == example_copy["output"]:
+                res = program(example_copy["input"])
+                res = json.dumps(res)
+                res = res.replace("true", "1").replace("false", "0")
+                unsafe_chars = re.compile(r"[^0-9,\[\]\s.]")
+                if unsafe_chars.search(res):
+                    raise ValueError(f"Invalid output from user code: {res}")
+                res = json.loads(res)
+                if res == example_copy["output"]:
                     right += 1
                 else:
                     expected = copy.deepcopy(example)
