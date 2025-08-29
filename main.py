@@ -1,4 +1,5 @@
 import io
+import time
 
 from flask import Flask, send_from_directory, send_file, request, session, redirect
 from flask import request
@@ -44,7 +45,6 @@ os.makedirs("./best", exist_ok=True)
 
 
 def execute_task(task, timeout):
-    print(timeout)
     try:
         proc = subprocess.run([PYTHON_EXECUTABLE, 'run-task.py', str(task)], capture_output=True, timeout=timeout, text=True, encoding='latin-1')
         if proc.returncode != 0:
@@ -134,7 +134,6 @@ def run(task):
     fpath = f"./sols/task{task:03d}.py"
     with open(fpath, 'wb') as f:
         data = bytes.fromhex(request.data.decode()).replace(b'\x0d\x0a', b'\x0a')
-        print(data)
         f.write(data)
 
     timeout = 90 if request.headers.get('x-long-timeout', "false") == "true" else 20

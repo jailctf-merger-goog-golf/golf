@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 from code_golf_utils import *
 from sys import argv
 

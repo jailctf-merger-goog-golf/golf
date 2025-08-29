@@ -20,12 +20,10 @@ import json
 import re
 import os
 import sys
+import time
 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import numpy as np
+plt = None
 
-mpl.rcParams['text.antialiased'] = False
 os.makedirs("working", exist_ok=True)
 
 code_golf_dir = "./infos/"
@@ -135,6 +133,10 @@ def load_examples(task_num):
 
 
 def show_legend():
+    global plt
+    if plt is None:
+        import matplotlib.pyplot as plt2
+        plt = plt2
     image = [[(255, 255, 255) for _ in range(10)] for _ in range(1)]
     for idx, color in enumerate(colors):
         image[0][idx] = color
@@ -145,12 +147,16 @@ def show_legend():
         ax.text(idx - 0.1, .1, str(idx), color=color, size=22)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.imshow(np.array(image))
+    ax.imshow(image)
 
     fig.savefig('./legend.png', dpi=300, bbox_inches='tight', pad_inches=0)
 
 
-def show_examples(examples, bgcolor=(255, 255, 255), name=""):
+def show_examples(examples, bgcolor=(255, 255, 255), name="", dpi=600):
+    global plt
+    if plt is None:
+        import matplotlib.pyplot as plt2
+        plt = plt2
     # Determine the dimensions of the image to be rendered.
     width, height, offset = 0, 0, 1
     for example in examples:
@@ -201,7 +207,7 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
     # Draw the image.
     fig = plt.figure()
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.imshow(np.array(image))
+    ax.imshow(image)
     # Draw the horizontal and vertical lines.
     offset = 1
     fs=min([max(1.3, 20 / ((len(example['input'][0])+len(example['output'][0])) ** 0.6)) for example in examples])
@@ -243,10 +249,11 @@ def show_examples(examples, bgcolor=(255, 255, 255), name=""):
     ax.set_xticks([])
     ax.set_yticks([])
     if len(name) != 0:
-        plt.savefig(f'./working/{name}', dpi=600, bbox_inches='tight')
+        plt.savefig(f'./working/{name}', dpi=dpi, bbox_inches='tight')
 
 
 def verify_program(task_num, examples):
+    start_time = time.time()
     task_name, task_path = f"task_with_imports{task_num:03d}", f"./sols/task{task_num:03d}.py"
     module_path = f"./working/task_with_imports/task_with_imports{task_num:03d}.py"
     with open(task_path, "rb") as file:
@@ -335,12 +342,14 @@ def verify_program(task_num, examples):
             print("First saved new best sol! good job")
             with open(f"./best/task{task_num:03d}.py", 'wb') as f:
                 f.write(file_content)
+        print(f"Took {int(time.time()*1000-start_time*1000)}ms to execute.")
     else:
         print("Your code IS NOT ready for submission.")
         expected = arc_agi_expected if arc_agi_expected else arc_gen_expected
         index = max(agi_index, gen_index)
         print(f"Your code failed on test case #{index+1}")
         if not expected:
+            print(f"Took {int(time.time()*1000-start_time*1000)}ms to execute.")
             from PIL import Image, ImageDraw
 
             img = Image.new('RGB', (100, 30), color=(73, 109, 137))
@@ -353,5 +362,8 @@ def verify_program(task_num, examples):
             return
         actual = {"input": expected["input"], "output": program(copy.deepcopy(expected["input"]))}
         print("The expected result is shown in green; your actual result is shown in red.")
-        show_examples([expected], bgcolor=(200, 255, 200), name=f'expected/{task_num:03d}.png')
-        show_examples([actual], bgcolor=(255, 200, 200), name=f'actual/{task_num:03d}.png')
+        print(f"Took {int(time.time()*1000-start_time*1000)}ms to execute.")
+        draw_time = time.time()
+        show_examples([expected], bgcolor=(200, 255, 200), name=f'expected/{task_num:03d}.png', dpi=200)
+        show_examples([actual], bgcolor=(255, 200, 200), name=f'actual/{task_num:03d}.png', dpi=200)
+        print(f"Took {int(time.time()*1000-draw_time*1000)}ms to draw.")

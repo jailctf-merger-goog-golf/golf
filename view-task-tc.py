@@ -1,6 +1,5 @@
-import matplotlib.pyplot as plt
-
 from code_golf_utils import *
+import matplotlib.pyplot as plt
 from sys import argv
 from os import makedirs
 
