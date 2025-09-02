@@ -3,6 +3,8 @@ import time
 
 from flask import Flask, send_from_directory, send_file, request, session, redirect
 from flask import request
+import base64
+import zipfile
 import subprocess
 import tempfile
 from json import dumps
@@ -107,6 +109,21 @@ def consolas():
 def working(filepath):
     os.makedirs("working", exist_ok=True)
     return send_from_directory("./working/", filepath, mimetype='image/png')
+
+
+@app.route("/best-zip")
+@auth_required
+def bestzip():
+    bio = io.BytesIO()
+    with zipfile.ZipFile(bio, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for n in range(1, 401):
+            bestpath = f"./best/task{n:03d}.py"
+            if os.path.isfile(bestpath):
+                with open(bestpath, 'r', encoding='l1') as f:
+                    data = f.read()
+                zipf.writestr(f'task{n:03d}.py', data)
+
+    return base64.b64encode(bio.getvalue()).decode('l1')
 
 
 @app.route('/infos/<path:filepath>')

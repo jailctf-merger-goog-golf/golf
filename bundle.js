@@ -26038,28 +26038,6 @@ websocket.onmessage = (event) => {
     viewingTaskNum = data.task ?? 1;
     updateEverythingAccordingToViewingTaskNum();
   }
-  if (data.type == "download-zip") {
-    let base64ToArrayBuffer = function(base64) {
-      var binaryString = window.atob(base64);
-      var binaryLen = binaryString.length;
-      var bytes = new Uint8Array(binaryLen);
-      for (var i = 0; i < binaryLen; i++) {
-        var ascii = binaryString.charCodeAt(i);
-        bytes[i] = ascii;
-      }
-      return bytes;
-    }, saveByteArray = function(reportName, byte) {
-      var blob = new Blob([byte], { type: "application/zip" });
-      var link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      var fileName = reportName;
-      link.download = fileName;
-      link.click();
-    };
-    ;
-    let sampleArr = base64ToArrayBuffer(data.zip);
-    saveByteArray(`export-${Math.floor(Date.now() / 1e3)}.zip`, sampleArr);
-  }
   if (typeof data.timing === "number") {
     systemTimesOffset = Date.now() / 1e3 - data.timing;
     websocketTiming = data.timing;
@@ -26117,12 +26095,6 @@ var websocketSendRandomNegativeRequest = () => {
   websocket.send(JSON.stringify({
     "safety_key": SAFETY_KEY,
     "type": "random-negative"
-  }));
-};
-var websocketSendDownloadZipRequest = () => {
-  websocket.send(JSON.stringify({
-    "safety_key": SAFETY_KEY,
-    "type": "download-zip"
   }));
 };
 var longTimeout = document.getElementById("long-timeout");
@@ -26428,7 +26400,33 @@ randomNegative.addEventListener("click", async (e) => {
   websocketSendRandomNegativeRequest();
 });
 downloadZip.addEventListener("click", async (e) => {
-  websocketSendDownloadZipRequest();
+  let resp = await fetch("/best-zip");
+  let data = await resp.text();
+  if (resp.status != 200) {
+    alert(data);
+    return;
+  }
+  function base64ToArrayBuffer(base64) {
+    var binaryString = window.atob(base64);
+    var binaryLen = binaryString.length;
+    var bytes = new Uint8Array(binaryLen);
+    for (var i = 0; i < binaryLen; i++) {
+      var ascii = binaryString.charCodeAt(i);
+      bytes[i] = ascii;
+    }
+    return bytes;
+  }
+  function saveByteArray(reportName, byte) {
+    var blob = new Blob([byte], { type: "application/zip" });
+    var link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    var fileName = reportName;
+    link.download = fileName;
+    link.click();
+  }
+  ;
+  let sampleArr = base64ToArrayBuffer(data);
+  saveByteArray(`export-${Math.floor(Date.now() / 1e3)}.zip`, sampleArr);
 });
 loadBestWorking.addEventListener("click", async (e) => {
   let resp = await fetch(`/best/${viewingTaskNum}`);
