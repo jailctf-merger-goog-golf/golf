@@ -33,7 +33,7 @@ websocket.onmessage = (event) => {
     if (data.type == "set-listen-done") {
         openToReceiving = true;
     }
-    if (data.type == "random-unsolved" || data.type == "random-negative") {
+    if (data.type == "random-unsolved" || data.type == "random-positive" || data.type == "random-negative") {
         viewingTaskNum = data.task ?? 1;
         updateEverythingAccordingToViewingTaskNum()
     }
@@ -84,12 +84,18 @@ let websocketSendSolution = (force=false) => {
         }))
     }
 }
-let websocketSendRandomUnsolvedRequest = () => {
+let websocketSendRandomPositiveRequest = () => {
     websocket.send(JSON.stringify({
         "safety_key": SAFETY_KEY,
-        "type": "random-unsolved"
+        "type": "random-positive"
     }))
 }
+//let websocketSendRandomUnsolvedRequest = () => {
+//    websocket.send(JSON.stringify({
+//        "safety_key": SAFETY_KEY,
+//        "type": "random-unsolved"
+//    }))
+//}
 let websocketSendRandomNegativeRequest = () => {
     websocket.send(JSON.stringify({
         "safety_key": SAFETY_KEY,
@@ -106,7 +112,8 @@ import {coolGlow} from 'thememirror';
 
 
 let longTimeout = document.getElementById('long-timeout');
-let randomUnsolved = document.getElementById('random-unsolved');
+//let randomUnsolved = document.getElementById('random-unsolved');
+let randomPositive = document.getElementById('random-positive');
 let randomNegative = document.getElementById('random-negative');
 let downloadZip = document.getElementById('download-zip');
 let resultElm = document.getElementById("result");
@@ -425,8 +432,8 @@ runButton.addEventListener("click", (e) => {
     runTask()
 })
 
-randomUnsolved.addEventListener('click', async (e) => {
-    websocketSendRandomUnsolvedRequest();
+randomPositive.addEventListener('click', async (e) => {
+    websocketSendRandomPositiveRequest();
 })
 
 randomNegative.addEventListener('click', async (e) => {

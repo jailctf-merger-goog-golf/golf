@@ -26034,7 +26034,7 @@ websocket.onmessage = (event) => {
   if (data.type == "set-listen-done") {
     openToReceiving = true;
   }
-  if (data.type == "random-unsolved" || data.type == "random-negative") {
+  if (data.type == "random-unsolved" || data.type == "random-positive" || data.type == "random-negative") {
     viewingTaskNum = data.task ?? 1;
     updateEverythingAccordingToViewingTaskNum();
   }
@@ -26085,10 +26085,10 @@ var websocketSendSolution = (force = false) => {
     }));
   }
 };
-var websocketSendRandomUnsolvedRequest = () => {
+var websocketSendRandomPositiveRequest = () => {
   websocket.send(JSON.stringify({
     "safety_key": SAFETY_KEY,
-    "type": "random-unsolved"
+    "type": "random-positive"
   }));
 };
 var websocketSendRandomNegativeRequest = () => {
@@ -26098,7 +26098,7 @@ var websocketSendRandomNegativeRequest = () => {
   }));
 };
 var longTimeout = document.getElementById("long-timeout");
-var randomUnsolved = document.getElementById("random-unsolved");
+var randomPositive = document.getElementById("random-positive");
 var randomNegative = document.getElementById("random-negative");
 var downloadZip = document.getElementById("download-zip");
 var resultElm = document.getElementById("result");
@@ -26393,8 +26393,8 @@ var runTask = async () => {
 runButton.addEventListener("click", (e) => {
   runTask();
 });
-randomUnsolved.addEventListener("click", async (e) => {
-  websocketSendRandomUnsolvedRequest();
+randomPositive.addEventListener("click", async (e) => {
+  websocketSendRandomPositiveRequest();
 });
 randomNegative.addEventListener("click", async (e) => {
   websocketSendRandomNegativeRequest();
