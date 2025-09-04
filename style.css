@@ -314,6 +314,7 @@ img {
     max-height: 40vh;
     width: 100%;
     background-color: #aaa;
+    overflow: scroll;
     min-height: 2px;
     margin-bottom: 14px;
 }
