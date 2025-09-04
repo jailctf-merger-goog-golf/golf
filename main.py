@@ -119,7 +119,7 @@ def bestzip():
         for n in range(1, 401):
             bestpath = f"./best/task{n:03d}.py"
             if os.path.isfile(bestpath):
-                with open(bestpath, 'r', encoding='l1') as f:
+                with open(bestpath, 'rb') as f:
                     data = f.read()
                 zipf.writestr(f'task{n:03d}.py', data)
 
