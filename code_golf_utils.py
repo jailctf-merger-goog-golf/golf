@@ -196,6 +196,9 @@ def show_examples(examples, bgcolor=(255, 255, 255), name="", dpi=600):
                 if isinstance(cell, list):
                     raise NotImplementedError("result not 2d list: " + str(output))
                 try:
+                    if isinstance(cell, float):
+                        if ".0" in repr(cell):
+                            cell = int(cell)
                     if isinstance(cell, int) and (cell > 9 or cell < 0):
                         col = (139,69,19)
                     else:
