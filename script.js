@@ -285,6 +285,7 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
                     return document.createTextNode("");  // empty text is nothing hack
                 }
                 if (e.ctrlKey) {  // viewing
+                    e.preventDefault();
                     copyTestcaseButtonsLabel.innerText = "Rendering ..."
 
                     resultElm.style.backgroundImage = "";

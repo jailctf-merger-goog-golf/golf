@@ -26270,6 +26270,7 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
             }
             return window.btoa(binary);
           };
+          e.preventDefault();
           copyTestcaseButtonsLabel.innerText = "Rendering ...";
           resultElm.style.backgroundImage = "";
           while (resultElm.firstChild) {
