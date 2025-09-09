@@ -239,6 +239,13 @@ pasteSol.addEventListener('click', async (e) => {
 })
 
 
+document.addEventListener('contextmenu', function(e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+});
+
+
 let updateEverythingAccordingToViewingTaskNum = async () => {
     while (copyTestcaseButtons.firstChild) { copyTestcaseButtons.firstChild.remove(); }
 
@@ -285,7 +292,6 @@ let updateEverythingAccordingToViewingTaskNum = async () => {
                     return document.createTextNode("");  // empty text is nothing hack
                 }
                 if (e.ctrlKey) {  // viewing
-                    e.preventDefault();
                     copyTestcaseButtonsLabel.innerText = "Rendering ..."
 
                     resultElm.style.backgroundImage = "";

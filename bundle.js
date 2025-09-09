@@ -26213,6 +26213,11 @@ pasteSol.addEventListener("click", async (e) => {
   ignoreWebsocketUntil = websocketTiming + 1.1;
   websocketSendSolution(true);
 });
+document.addEventListener("contextmenu", function(e) {
+  if (e.ctrlKey) {
+    e.preventDefault();
+  }
+});
 var updateEverythingAccordingToViewingTaskNum = async () => {
   while (copyTestcaseButtons.firstChild) {
     copyTestcaseButtons.firstChild.remove();
@@ -26270,7 +26275,6 @@ var updateEverythingAccordingToViewingTaskNum = async () => {
             }
             return window.btoa(binary);
           };
-          e.preventDefault();
           copyTestcaseButtonsLabel.innerText = "Rendering ...";
           resultElm.style.backgroundImage = "";
           while (resultElm.firstChild) {
