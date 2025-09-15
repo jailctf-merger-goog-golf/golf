@@ -442,7 +442,9 @@ runButton.addEventListener("click", (e) => {
 randomPositive.addEventListener('click', async (e) => {
     websocketSendRandomPositiveRequest();
 })
-
+randomNeutral.addEventListener('click', async (e) => {
+    websocketSendRandomNeutralRequest();
+})
 randomNegative.addEventListener('click', async (e) => {
     websocketSendRandomNegativeRequest();
 })

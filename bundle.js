@@ -26091,6 +26091,12 @@ var websocketSendRandomPositiveRequest = () => {
     "type": "random-positive"
   }));
 };
+var websocketSendRandomNeutralRequest = () => {
+  websocket.send(JSON.stringify({
+    "safety_key": SAFETY_KEY,
+    "type": "random-neutral"
+  }));
+};
 var websocketSendRandomNegativeRequest = () => {
   websocket.send(JSON.stringify({
     "safety_key": SAFETY_KEY,
@@ -26401,6 +26407,9 @@ runButton.addEventListener("click", (e) => {
 });
 randomPositive.addEventListener("click", async (e) => {
   websocketSendRandomPositiveRequest();
+});
+randomNeutral.addEventListener("click", async (e) => {
+  websocketSendRandomNeutralRequest();
 });
 randomNegative.addEventListener("click", async (e) => {
   websocketSendRandomNegativeRequest();
