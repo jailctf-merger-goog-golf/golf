@@ -26034,7 +26034,7 @@ websocket.onmessage = (event) => {
   if (data.type == "set-listen-done") {
     openToReceiving = true;
   }
-  if (data.type == "random-unsolved" || data.type == "random-positive" || data.type == "random-negative") {
+  if (data.type == "random-neutral" || data.type == "random-positive" || data.type == "random-negative") {
     viewingTaskNum = data.task ?? 1;
     updateEverythingAccordingToViewingTaskNum();
   }
@@ -26098,6 +26098,7 @@ var websocketSendRandomNegativeRequest = () => {
   }));
 };
 var longTimeout = document.getElementById("long-timeout");
+var randomNeutral = document.getElementById("random-neutral");
 var randomPositive = document.getElementById("random-positive");
 var randomNegative = document.getElementById("random-negative");
 var downloadZip = document.getElementById("download-zip");
