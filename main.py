@@ -7,7 +7,7 @@ import base64
 import zipfile
 import subprocess
 import tempfile
-from json import dumps
+from json import dumps, loads
 from functools import wraps
 import os
 from random import choice
@@ -42,8 +42,28 @@ def auth_required(func):
     return wrapper
 
 
+
+timings = {i: None for i in range(1, 401)}
+
+
+def save_timings():
+    with open("./working/timings.json", 'w') as f:
+        f.write(dumps(timings))
+
+
+def load_timings():
+    with open("./working/timings.json", 'r') as f:
+        timings_new = loads(f.read())
+    timings.update(timings_new)
+
+
+
 app = Flask(__name__)
 os.makedirs("./best", exist_ok=True)
+if not os.path.isfile("./working/timings.json"):
+    save_timings()
+
+
 
 
 def execute_task(task, timeout):

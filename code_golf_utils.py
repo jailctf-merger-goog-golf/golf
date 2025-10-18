@@ -329,10 +329,13 @@ def verify_program(task_num, examples):
     print(f"Results on ARC-AGI examples: {arc_agi_right} pass, {arc_agi_wrong} fail")
     print(f"Results on ARC-GEN examples: {arc_gen_right} pass, {arc_gen_wrong} fail")
     print()
+    ms_taken = int(time.time()*1000-start_time*1000)
     if arc_agi_wrong + arc_gen_wrong == 0:
         task_length = os.path.getsize(task_path)
         print("Your code IS READY for submission!")
         print("Its length appears to be " + str(task_length) + " bytes.")
+        with open("./working/timings.json", 'r') as f:
+            timings = json.loads(f.read())
         try:
             with open(f"./best/task{task_num:03d}.py", 'rb') as f:
                 old = f.read()
@@ -340,22 +343,43 @@ def verify_program(task_num, examples):
                 with open(f"./best/task{task_num:03d}.py", 'wb') as f:
                     f.write(file_content)
                 print(f"Saved new best in ./best/task{task_num:03d}.py!")
+                timings[str(task_num)] = ms_taken
+                with open("./working/timings.json", 'w') as f:
+                    timings[str(task_num)] = ms_taken
+                    f.write(json.dumps(timings))
             elif len(old) == task_length:
                 print(f"This solution is the same length as the saved best in ./best/task{task_num:03d}.py!")
+                if timings[str(task_num)] is None:
+                    timings[str(task_num)] = 99999
+                if ms_taken < timings[str(task_num)]:
+                    print(f"It took less time than the saved best ({timings[str(task_num)]}ms -> {ms_taken}ms)")
+                    with open(f"./best/task{task_num:03d}.py", 'wb') as f:
+                        f.write(file_content)
+                    with open("./working/timings.json", 'w') as f:
+                        timings[str(task_num)] = ms_taken
+                        f.write(json.dumps(timings))
+                    print(f"Saved new best in ./best/task{task_num:03d}.py!")
+                else:
+                    print(f"However, it takes longer to run (saved {timings[str(task_num)]}ms < new {ms_taken}ms)")
+                    print("New best not saved.")
             else:
                 print(f"Does not beat best of {len(old)} bytes.")
         except FileNotFoundError:
             print("First saved new best sol! good job")
             with open(f"./best/task{task_num:03d}.py", 'wb') as f:
                 f.write(file_content)
-        print(f"Took {int(time.time()*1000-start_time*1000)}ms to execute.")
+                timings[str(task_num)] = ms_taken
+            with open("./working/timings.json", 'w') as f:
+                timings[str(task_num)] = ms_taken
+                f.write(json.dumps(timings))
+        print(f"Took {ms_taken}ms to execute.")
     else:
         print("Your code IS NOT ready for submission.")
         expected = arc_agi_expected if arc_agi_expected else arc_gen_expected
         index = max(agi_index, gen_index)
         print(f"Your code failed on test case #{index+1}")
         if not expected:
-            print(f"Took {int(time.time()*1000-start_time*1000)}ms to execute.")
+            print(f"Took {ms_taken}ms to execute.")
             from PIL import Image, ImageDraw
 
             img = Image.new('RGB', (100, 30), color=(73, 109, 137))
@@ -368,7 +392,7 @@ def verify_program(task_num, examples):
             return
         actual = {"input": expected["input"], "output": program(copy.deepcopy(expected["input"]))}
         print("The expected result is shown in green; your actual result is shown in red.")
-        print(f"Took {int(time.time()*1000-start_time*1000)}ms to execute.")
+        print(f"Took {ms_taken}ms to execute.")
         draw_time = time.time()
         show_examples([expected], bgcolor=(200, 255, 200), name=f'expected/{task_num:03d}.png', dpi=200)
         show_examples([actual], bgcolor=(255, 200, 200), name=f'actual/{task_num:03d}.png', dpi=200)
