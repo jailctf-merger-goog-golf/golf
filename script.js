@@ -15,6 +15,16 @@ SAFETY_KEY = SAFETY_KEY.trim()
 let viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
 let lastViewingTaskNum = viewingTaskNum;
 
+function saveFilterVars() {
+    localStorage.setItem('goog-filter-min', filterMin);
+    localStorage.setItem('goog-filter-max', filterMax);
+}
+
+// min max stuff
+let filterMin = localStorage.getItem('goog-filter-min') ?? 0;
+let filterMax = localStorage.getItem('goog-filter-max') ?? 100000;
+saveFilterVars();
+
 // better latency tracking for websocket stuff
 let systemTimesOffset = -1;
 // websockets stuff
@@ -87,19 +97,25 @@ let websocketSendSolution = (force=false) => {
 let websocketSendRandomPositiveRequest = () => {
     websocket.send(JSON.stringify({
         "safety_key": SAFETY_KEY,
-        "type": "random-positive"
+        "type": "random-positive",
+        "filter-min": filterMin,
+        "filter-max": filterMax
     }))
 }
 let websocketSendRandomNeutralRequest = () => {
     websocket.send(JSON.stringify({
         "safety_key": SAFETY_KEY,
-        "type": "random-neutral"
+        "type": "random-neutral",
+        "filter-min": filterMin,
+        "filter-max": filterMax
     }))
 }
 let websocketSendRandomNegativeRequest = () => {
     websocket.send(JSON.stringify({
         "safety_key": SAFETY_KEY,
-        "type": "random-negative"
+        "type": "random-negative",
+        "filter-min": filterMin,
+        "filter-max": filterMax
     }))
 }
 
@@ -129,6 +145,7 @@ let copyTestcaseButtons = document.getElementById('copy-testcase-buttons');
 let copyTestcaseButtonsLabel = document.getElementById('copy-testcase-buttons-label');
 let copySol = document.getElementById('copy-sol')
 let pasteSol = document.getElementById('paste-sol')
+let filterMinMaxSetDialog = document.getElementById('filter-min-max-set-dialog');
 let openToolsDialog = document.getElementById('open-tools-dialog');
 let toolsDialog = document.getElementById('tools');
 let toolsUpdate = document.getElementById('tools-update');
@@ -196,6 +213,43 @@ openToolsDialog.addEventListener("click", (e) => {
     toolsDialog.showModal();
     toolsError.innerText = '';
     toolsLabel.innerText = 'Tools';
+})
+
+filterMinMaxSetDialog.addEventListener('click', (e) => {
+    if (e.shiftKey) {
+        alert(`min: ${filterMin}, max: ${filterMax}`);
+    } else {
+        let newMin = 0;
+        let newMax = 1000000;
+        while (true) {
+            newMin = prompt("new minimum (inclusive)")
+            if (newMin == null || newMin === "") {
+                alert("cancelled");
+                return;
+            }
+            newMin = parseInt(newMin);
+            if (Number.isInteger(newMin)) {
+                break;
+            }
+            alert("bad minimum value");
+        }
+        while (true) {
+            newMax = prompt("new maximum (inclusive)")
+            if (newMax == null || newMax === "") {
+                alert("cancelled");
+                return;
+            }
+            newMax = parseInt(newMax);
+            if (Number.isInteger(newMax)) {
+                break;
+            }
+            alert("bad maximum value");
+        }
+        filterMin = newMin;
+        filterMax = newMax;
+        alert(`NEW min: ${filterMin}, NEW max: ${filterMax}`);
+        saveFilterVars();
+    }
 })
 
 toolsDialogClose.addEventListener("click", (e) => {

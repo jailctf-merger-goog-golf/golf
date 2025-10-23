@@ -235,7 +235,7 @@ img {
 .pos-relative {
     position: relative;
 }
-#copy-sol, #paste-sol, #open-tools-dialog {
+#copy-sol, #paste-sol, #open-tools-dialog, #filter-min-max-set-dialog {
     margin-left: 8px;
 }
 

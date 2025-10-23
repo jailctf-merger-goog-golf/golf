@@ -26018,6 +26018,13 @@ while (!SAFETY_KEY) {
 }
 SAFETY_KEY = SAFETY_KEY.trim();
 var viewingTaskNum = parseInt(localStorage.getItem("goog-task") ?? "1");
+function saveFilterVars() {
+  localStorage.setItem("goog-filter-min", filterMin);
+  localStorage.setItem("goog-filter-max", filterMax);
+}
+var filterMin = localStorage.getItem("goog-filter-min") ?? 0;
+var filterMax = localStorage.getItem("goog-filter-max") ?? 1e5;
+saveFilterVars();
 var systemTimesOffset = -1;
 var refreshAsapMessageGiven = false;
 var websocketTiming = -1;
@@ -26088,19 +26095,25 @@ var websocketSendSolution = (force = false) => {
 var websocketSendRandomPositiveRequest = () => {
   websocket.send(JSON.stringify({
     "safety_key": SAFETY_KEY,
-    "type": "random-positive"
+    "type": "random-positive",
+    "filter-min": filterMin,
+    "filter-max": filterMax
   }));
 };
 var websocketSendRandomNeutralRequest = () => {
   websocket.send(JSON.stringify({
     "safety_key": SAFETY_KEY,
-    "type": "random-neutral"
+    "type": "random-neutral",
+    "filter-min": filterMin,
+    "filter-max": filterMax
   }));
 };
 var websocketSendRandomNegativeRequest = () => {
   websocket.send(JSON.stringify({
     "safety_key": SAFETY_KEY,
-    "type": "random-negative"
+    "type": "random-negative",
+    "filter-min": filterMin,
+    "filter-max": filterMax
   }));
 };
 var longTimeout = document.getElementById("long-timeout");
@@ -26121,6 +26134,7 @@ var copyTestcaseButtons = document.getElementById("copy-testcase-buttons");
 var copyTestcaseButtonsLabel = document.getElementById("copy-testcase-buttons-label");
 var copySol = document.getElementById("copy-sol");
 var pasteSol = document.getElementById("paste-sol");
+var filterMinMaxSetDialog = document.getElementById("filter-min-max-set-dialog");
 var openToolsDialog = document.getElementById("open-tools-dialog");
 var toolsDialog = document.getElementById("tools");
 var toolsUpdate = document.getElementById("tools-update");
@@ -26185,6 +26199,42 @@ openToolsDialog.addEventListener("click", (e) => {
   toolsDialog.showModal();
   toolsError.innerText = "";
   toolsLabel.innerText = "Tools";
+});
+filterMinMaxSetDialog.addEventListener("click", (e) => {
+  if (e.shiftKey) {
+    alert(`min: ${filterMin}, max: ${filterMax}`);
+  } else {
+    let newMin = 0;
+    let newMax = 1e6;
+    while (true) {
+      newMin = prompt("new minimum (inclusive)");
+      if (newMin == null || newMin === "") {
+        alert("cancelled");
+        return;
+      }
+      newMin = parseInt(newMin);
+      if (Number.isInteger(newMin)) {
+        break;
+      }
+      alert("bad minimum value");
+    }
+    while (true) {
+      newMax = prompt("new maximum (inclusive)");
+      if (newMax == null || newMax === "") {
+        alert("cancelled");
+        return;
+      }
+      newMax = parseInt(newMax);
+      if (Number.isInteger(newMax)) {
+        break;
+      }
+      alert("bad maximum value");
+    }
+    filterMin = newMin;
+    filterMax = newMax;
+    alert(`NEW min: ${filterMin}, NEW max: ${filterMax}`);
+    saveFilterVars();
+  }
 });
 toolsDialogClose.addEventListener("click", (e) => {
   toolsDialog.close();
