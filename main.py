@@ -156,22 +156,22 @@ def fav():
     return send_file("./favicon.ico", mimetype='image/ico')
 
 
-@app.post('/run/<int:task>')
-@auth_required
-def run(task):
-    os.makedirs("working/actual", exist_ok=True)
-    os.makedirs("working/expected", exist_ok=True)
-    os.makedirs("working/task_with_imports", exist_ok=True)
-    fpath = f"./sols/task{task:03d}.py"
-    with open(fpath, 'wb') as f:
-        data = bytes.fromhex(request.data.decode()).replace(b'\x0d\x0a', b'\x0a')
-        f.write(data)
-
-    timeout = 90 if request.headers.get('x-long-timeout', "false") == "true" else 20
-    output, status_code = execute_task(task, timeout)
-    if len(request.data) == 0:
-        os.remove(fpath)
-    return output, status_code
+# @app.post('/run/<int:task>')
+# @auth_required
+# def run(task):
+#     os.makedirs("working/actual", exist_ok=True)
+#     os.makedirs("working/expected", exist_ok=True)
+#     os.makedirs("working/task_with_imports", exist_ok=True)
+#     fpath = f"./sols/task{task:03d}.py"
+#     with open(fpath, 'wb') as f:
+#         data = bytes.fromhex(request.data.decode()).replace(b'\x0d\x0a', b'\x0a')
+#         f.write(data)
+#
+#     timeout = 90 if request.headers.get('x-long-timeout', "false") == "true" else 20
+#     output, status_code = execute_task(task, timeout)
+#     if len(request.data) == 0:
+#         os.remove(fpath)
+#     return output, status_code
 
 
 @app.get('/view/<int:task>')
