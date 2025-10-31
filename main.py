@@ -101,31 +101,26 @@ def auth():
 
 
 @app.route('/style.css')
-@auth_required
 def swag():
     return send_file("./style.css")
 
 
 @app.route('/cm6.bundle.min.js')
-@auth_required
 def cm6():
     return send_file("./cm6.bundle.min.js", mimetype="application/javascript")
 
 
 @app.route('/bundle.js')
-@auth_required
 def script():
     return send_file("./bundle.js", mimetype="application/javascript")
 
 
 @app.route('/consolas.ttf')
-@auth_required
 def consolas():
     return send_file("./consolas.ttf", mimetype="font/ttf")
 
 
 @app.route('/working/<path:filepath>')
-@auth_required
 def working(filepath):
     os.makedirs("working", exist_ok=True)
     return send_from_directory("./working/", filepath, mimetype='image/png')
@@ -147,7 +142,6 @@ def bestzip():
 
 
 @app.route('/infos/<path:filepath>')
-@auth_required
 def infos(filepath):
     return send_from_directory("./infos/", filepath, mimetype='application/json')
 
@@ -181,7 +175,6 @@ def run(task):
 
 
 @app.get('/view/<int:task>')
-@auth_required
 def view(task):
     os.makedirs("working/view", exist_ok=True)
     if not os.path.isfile(f"./working/view/task{task:03d}.png"):
@@ -190,7 +183,6 @@ def view(task):
 
 
 @app.get('/best/<int:task>')
-@auth_required
 def best(task):
     try:
         with open(f"./best/task{task:03d}.py", 'rb') as f:
@@ -201,7 +193,6 @@ def best(task):
 
 
 @app.get('/viewtc/<int:task>/<int:testcase>')
-@auth_required
 def viewtc(task, testcase):
     os.makedirs("working/viewtc", exist_ok=True)
     if not os.path.isfile(f"./working/viewtc/task{task:03d}-{testcase}.png"):
@@ -210,7 +201,6 @@ def viewtc(task, testcase):
 
 
 @app.get('/tools/list')
-@auth_required
 def list_tools():
     if not os.path.isdir("compression"):
         os.system("git clone https://github.com/jailctf-merger-goog-golf/compression")
