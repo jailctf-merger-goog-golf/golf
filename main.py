@@ -87,16 +87,16 @@ def execute_task(task, timeout):
 
 @app.route('/')
 def home():
-    # if "auth" not in session or not session["auth"]:
-    #     return send_file("./auth.html")
+    if "auth" not in session or not session["auth"]:
+        return send_file("./auth.html")
     return send_file("./index.html")
 
 
 @app.post('/auth')
 def auth():
-    if request.data.decode('latin-1') == SAFETY_KEY:
-        session["auth"] = True
-        return 'come on through', 200
+    session["auth"] = True
+    return 'come on through', 200
+    # if request.data.decode('latin-1') == SAFETY_KEY:
     return 'nope', 401
 
 
