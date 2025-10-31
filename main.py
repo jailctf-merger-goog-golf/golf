@@ -87,8 +87,8 @@ def execute_task(task, timeout):
 
 @app.route('/')
 def home():
-    if "auth" not in session or not session["auth"]:
-        return send_file("./auth.html")
+    # if "auth" not in session or not session["auth"]:
+    #     return send_file("./auth.html")
     return send_file("./index.html")
 
 
